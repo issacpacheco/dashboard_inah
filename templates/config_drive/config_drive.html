@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>TREN DE CARGA - Panel</title>
+    {% include 'head.html' %}
+</head>
+
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}">
+                                                <i class="fal fa-home"></i>
+                                            </a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a href="{{ url_for('config_drive') }}">Configuraciones drive</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Configuracón de respaldos de drive</h3>
+                    <div class="row">
+                        <div class="col-sm-12 mb-3">
+                            <a class="btn btn-success" href="{{ url_for('config_drive_abc', accion='agregar') }}"><i class="fal fa-plus"></i> Agregar configuración</a>
+                        </div>
+                        <div class="col-sm-12">
+                            {% if backups|length == 0 %}
+                            <div class="alert alert-info" role="alert">
+                                No se encontraron configuraciones de respaldo.
+                            </div>
+                            {% endif %}
+                            <table class="table table-light">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Folder ID</th>
+                                        <th>Ruta JSON</th>
+                                        <th>Ruta</th>
+                                        <th>Ruta ZIP</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        {% for config_drive in config_drive %}
+                                        <td>{{config_drive.nombre}}</td>
+                                        <td>{{config_drive.folder_id}}</td>
+                                        <td>{{config_drive.ruta_json}}</td>
+                                        <td>{{config_drive.ruta_local}}</td>
+                                        <td>{{config_drive.ruta_zip}}</td>
+                                        <td>
+                                            <a class="btn btn-primary" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='editar') }}"><i class="fal fa-edit"></i> Editar</a>
+                                            <a class="btn btn-danger" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='eliminar') }}"><i class="fal fa-trash"></i> Eliminar</a>
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
+    {% include 'scripts.html' %}
+</body>
+
+</html>

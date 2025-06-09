@@ -63,10 +63,18 @@
                                             📁 {{ file }}
                                         </a>
                                         {% else %}
-                                        <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
+                                        <!-- <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
                                             class="list-group-item list-group-item-action" target="_blank">
                                             📄 {{ file }}
+                                        </a> -->
+                                        <!--Ancla para visualizar documentos y omitir la descarga-->
+                                        <a href="javascript:void(0)"
+                                            onclick='VisualizarDocumento({{ full_path | tojson }});'
+                                            class="list-group-item list-group-item-action">
+                                            {{ file }}
                                         </a>
+
+
                                         {% endif %}
                                         {% endfor %}
                                     </div>
@@ -104,6 +112,7 @@
 
     <script>
         function VisualizarDocumento(url) {
+            console.log(url);
             $("#ModalVisualizar").modal("show");
             $("#iframe").attr("src", url);
         }

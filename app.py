@@ -101,13 +101,88 @@ def panel():
     response = make_response(render_template('panel.html'))
     return add_no_cache_headers(response)
 
+@app.route('/config_drive/config_drive', methods=['GET', 'POST'])
+def config_drive():
+    # Obtener configuración del usuario
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM config_drive")
+    config_drive = cur.fetchone()
+    cur.close()
+
+
+    arreglo_config_drive = []
+    if config_drive:
+        arreglo_config_drive.append({
+            'id': config_drive[0],
+            'nombre' : config_drive[1],
+            'folder_id': config_drive[2],
+            'ruta_json': config_drive[3],
+            'ruta_local': config_drive[4],
+            'ruta_zip': config_drive[5]
+        })
+
+
+    response = make_response(render_template('config_drive/config_drive.html', config_drive=arreglo_config_drive))
+    return add_no_cache_headers(response)
+
+@app.route('/config_drive/config_drive_abc', methods=['GET', 'POST'])
+def config_drive_abc():
+    opcion = None  # Inicializa la variable
+
+    if request.method == 'GET':
+        accion = request.args.get("accion")
+        if accion == "agregar":
+            opcion = "agregar"
+        elif accion == "editar":
+            opcion = "editar"
+        elif accion == "eliminar":
+            opcion = "eliminar"
+        else:
+            flash("Acción no reconocida.", "error")
+
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        id_folder = request.form.get('id_folder')
+        json_path = request.form.get('json_path')
+        download_path = request.form.get('download_path')
+        zip_path = request.form.get('zip_path')
+        accion = request.form.get('accion')
+        id = request.form.get('id')
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        if accion == 'agregar':
+            cur.execute('INSERT INTO config_drive (nombre, id_folder, ruta_json, ruta_descargar, ruta_zip) VALUES (%s, %s, %s, %s, %s)', (nombre, id_folder, json_path, download_path, zip_path))
+            conn.commit()
+            flash("Configuración guardada exitosamente.")
+        elif accion == 'editar':
+            cur.execute('UPDATE config_drive SET nombre=%s, id_folder=%s, ruta_json=%s, ruta_descargar=%s, ruta_zip=%s WHERE id=%s', (nombre, id_folder, json_path, download_path, zip_path, id))
+            conn.commit()
+            flash("Configuración actualizada exitosamente.")
+        elif accion == 'eliminar':
+            cur.execute('DELETE FROM config_drive WHERE id=%s', (id,))
+            conn.commit()
+            flash("Configuración eliminada exitosamente.")
+        else:
+            flash("Acción no reconocida.", "error")
+
+        cur.close()
+        conn.close()
+        return redirect(url_for('config_drive_abc'))  # Redirige después de POST
+
+    response = make_response(render_template('config_drive/config_drive_abc.html', accion=opcion))
+    return add_no_cache_headers(response)
+
 @app.route('/backup', methods=['GET', 'POST'])
 def backup():
     global backup_instance
     zip_file = None
-
-    if request.method == "POST":
-        if request.form.get("stop"):
+    if request.method == 'POST':
+        accion = request.form.get('accion')
+        id = request.form.get('id')
+        if accion == "detener_respaldo":
             if backup_instance:
                 backup_instance.detener_backup()
                 backup_instance = None
@@ -115,105 +190,173 @@ def backup():
             else:
                 flash("No hay un respaldo en curso.")
             return redirect(url_for('backup'))
+        elif accion == 'iniciar_respaldo':
+            conn = get_db_connection()
+            cur = conn.cursor()
 
-        # Obtener datos del formulario
-        json_path = request.form.get("json_path")
-        folder_id = request.form.get("folder_id")
-        download_path = request.form.get("download_path")
-        zip_path = request.form.get("zip_path")
+            cur.execute("SELECT * FROM config_drive WHERE id = %s", (id,))
+            config_drive = cur.fetchone()
 
-        # Validar campos
-        if not all([json_path, folder_id, download_path, zip_path]):
-            return "❌ Error: Todos los campos son obligatorios."
-
-        # Obtener configuración del usuario
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        cur.execute("SELECT * FROM usuarios WHERE correo = %s", (session['username'],))
-        user = cur.fetchone()
-
-        if not user:
             cur.close()
             conn.close()
-            flash("Usuario no encontrado.")
-            return redirect(url_for('panel'))
 
-        user_id = user[0]
+            if not config_drive:
+                flash("Configuración no encontrada.")
+                return redirect(url_for('backup'))
 
-        cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (user_id,))
-        config = cur.fetchone()
+            folder_id = config_drive[2]
+            json_path = config_drive[3]
+            download_path = config_drive[4]
+            zip_path = config_drive[5]
 
-        if not config:
-            cur.execute("""
-                INSERT INTO usuarios_configuracion (id_usuario, ruta_json, folder_id, ruta_descargar, ruta_zip)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (user_id, json_path, folder_id, download_path, zip_path))
+            try:
+                backup_instance = DriveBackup(
+                    credentials_path=json_path,
+                    folder_ids=[folder_id],
+                    output_dir=download_path,
+                    zip_output=zip_path
+                )
+                zip_file = backup_instance.run()
+                #Mostramos los archivos descargados
+                return make_response(render_template('backup.html', output_text=backup_instance.messages))
+            except Exception as e:
+                flash(f"Error al iniciar el respaldo: {str(e)}")
+
+            return send_file(zip_file, as_attachment=True)
         else:
-            cur.execute("""
-                UPDATE usuarios_configuracion
-                SET ruta_json = %s, folder_id = %s, ruta_descargar = %s, ruta_zip = %s
-                WHERE id_usuario = %s
-            """, (json_path, folder_id, download_path, zip_path, user_id))
+            flash("Acción no reconocida.", "error")
 
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        try:
-            backup_instance = DriveBackup(
-                credentials_path=json_path,
-                folder_ids=[folder_id],
-                output_dir=download_path,
-                zip_output=zip_path
-            )
-            zip_file = backup_instance.run()
-            #Mostramos los archivos descargados
-            return make_response(render_template('backup.html', output_text=backup_instance.messages))
-        except Exception as e:
-            flash(f"Error al iniciar el respaldo: {str(e)}")
-
-        return send_file(zip_file, as_attachment=True)
-
-    # GET: cargar configuración
     conn = get_db_connection()
     cur = conn.cursor()
-
-    cur.execute("SELECT * FROM usuarios WHERE correo = %s", (session['username'],))
-    user = cur.fetchone()
-
-    if not user:
-        cur.close()
-        conn.close()
-        return "❌ Error: Usuario no encontrado."
-
-    user_id = user[0]
-
-    cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (user_id,))
-    config = cur.fetchone()
-
+    cur.execute("SELECT * FROM config_drive")
+    config_drive = cur.fetchone()
     cur.close()
-    conn.close()
 
-    if config:
-        json_path = config[2]
-        folder_id = config[3]
-        download_path = config[4]
-        zip_path = config[5]
-    else:
-        json_path = ""
-        folder_id = ""
-        download_path = ""
-        zip_path = ""
+    arreglo_config_drive = []
+    if config_drive:
+        arreglo_config_drive.append({
+            'id': config_drive[0],
+            'nombre' : config_drive[1],
+            'folder_id': config_drive[2],
+            'ruta_json': config_drive[3],
+            'ruta_local': config_drive[4],
+            'ruta_zip': config_drive[5]
+        })
 
-    context = {
-        "json_path": json_path,
-        "folder_id": folder_id,
-        "download_path": download_path,
-        "zip_path": zip_path,
-    }
+    response = make_response(render_template('backup.html', config_drive=arreglo_config_drive))
+    return add_no_cache_headers(response)
+# def backup():
+#     global backup_instance
+#     zip_file = None
 
-    return render_template("backup.html", **context)
+#     if request.method == "POST":
+#         if request.form.get("stop"):
+#             if backup_instance:
+#                 backup_instance.detener_backup()
+#                 backup_instance = None
+#                 flash("Respaldo detenido exitosamente.")
+#             else:
+#                 flash("No hay un respaldo en curso.")
+#             return redirect(url_for('backup'))
+
+#         # Obtener datos del formulario
+#         json_path = request.form.get("json_path")
+#         folder_id = request.form.get("folder_id")
+#         download_path = request.form.get("download_path")
+#         zip_path = request.form.get("zip_path")
+
+#         # Validar campos
+#         if not all([json_path, folder_id, download_path, zip_path]):
+#             return "❌ Error: Todos los campos son obligatorios."
+
+#         # Obtener configuración del usuario
+#         conn = get_db_connection()
+#         cur = conn.cursor()
+
+#         cur.execute("SELECT * FROM usuarios WHERE correo = %s", (session['username'],))
+#         user = cur.fetchone()
+
+#         if not user:
+#             cur.close()
+#             conn.close()
+#             flash("Usuario no encontrado.")
+#             return redirect(url_for('panel'))
+
+#         user_id = user[0]
+
+#         cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (user_id,))
+#         config = cur.fetchone()
+
+#         if not config:
+#             cur.execute("""
+#                 INSERT INTO usuarios_configuracion (id_usuario, ruta_json, folder_id, ruta_descargar, ruta_zip)
+#                 VALUES (%s, %s, %s, %s, %s)
+#             """, (user_id, json_path, folder_id, download_path, zip_path))
+#         else:
+#             cur.execute("""
+#                 UPDATE usuarios_configuracion
+#                 SET ruta_json = %s, folder_id = %s, ruta_descargar = %s, ruta_zip = %s
+#                 WHERE id_usuario = %s
+#             """, (json_path, folder_id, download_path, zip_path, user_id))
+
+#         conn.commit()
+#         cur.close()
+#         conn.close()
+
+#         try:
+#             backup_instance = DriveBackup(
+#                 credentials_path=json_path,
+#                 folder_ids=[folder_id],
+#                 output_dir=download_path,
+#                 zip_output=zip_path
+#             )
+#             zip_file = backup_instance.run()
+#             #Mostramos los archivos descargados
+#             return make_response(render_template('backup.html', output_text=backup_instance.messages))
+#         except Exception as e:
+#             flash(f"Error al iniciar el respaldo: {str(e)}")
+
+#         return send_file(zip_file, as_attachment=True)
+
+#     # GET: cargar configuración
+#     conn = get_db_connection()
+#     cur = conn.cursor()
+
+#     cur.execute("SELECT * FROM usuarios WHERE correo = %s", (session['username'],))
+#     user = cur.fetchone()
+
+#     if not user:
+#         cur.close()
+#         conn.close()
+#         return "❌ Error: Usuario no encontrado."
+
+#     user_id = user[0]
+
+#     cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (user_id,))
+#     config = cur.fetchone()
+
+#     cur.close()
+#     conn.close()
+
+#     if config:
+#         json_path = config[2]
+#         folder_id = config[3]
+#         download_path = config[4]
+#         zip_path = config[5]
+#     else:
+#         json_path = ""
+#         folder_id = ""
+#         download_path = ""
+#         zip_path = ""
+
+#     context = {
+#         "json_path": json_path,
+#         "folder_id": folder_id,
+#         "download_path": download_path,
+#         "zip_path": zip_path,
+#     }
+
+#     return render_template("backup.html", **context)
 
 
 @app.route('/files')
@@ -288,6 +431,8 @@ def explorer(folder_id, req_path):
 
     files = os.listdir(abs_path)
     files.sort()
+
+    #mostramos solo los arch
 
     return render_template(
         'files.html',
