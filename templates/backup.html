@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>TREN DE CARGA - Panel</title>
+    {% include 'head.html' %}
+</head>
+
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}">
+                                                <i class="fal fa-home"></i>
+                                            </a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a href="{{ url_for('backup') }}">Backup</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Backup Drive google sheet</h3>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card mb-4">
+                                <div class="card-header">Formulario de configuración</div>
+                                <div class="card-body">
+                                    <form class="mb-3" method="POST" action="{{ url_for('backup') }}"
+                                        enctype="multipart/form-data">
+                                        <label>Ruta del archivo JSON:</label><br>
+                                        <input class="form-control" type="text" name="json_path"
+                                            value="{{ json_path }}"><br><br>
+
+                                        <label>ID del folder en Google Drive:</label><br>
+                                        <input class="form-control" type="text" name="folder_id"
+                                            value="{{ folder_id }}"><br><br>
+
+                                        <label>Ruta local de descarga:</label><br>
+                                        <input class="form-control" type="text" name="download_path"
+                                            value="{{ download_path }}"><br><br>
+
+                                        <label>Ruta final del ZIP:</label><br>
+                                        <input class="form-control" type="text" name="zip_path"
+                                            value="{{ zip_path }}"><br><br>
+
+                                        <button class="btn btn-primary" type="submit"><i class="fal fa-sync"></i>
+                                            Iniciar respaldo</button>
+                                    </form>
+
+                                    <form method="POST" action="{{ url_for('backup') }}">
+                                        <input type="hidden" name="stop" value="1">
+                                        <button class="btn btn-danger" type="submit"><i class="fal fa-stop"></i> Detener
+                                            respaldo</button>
+                                    </form>
+                                </div>
+                                {% with messages = get_flashed_messages() %}
+                                {% if messages %}
+                                <div class="alert alert-info mt-3">
+                                    {% for message in messages %}
+                                    <p>{{ message }}</p>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                {% endwith %}
+                                {% if backup %}
+                                <div class="card-body">
+                                    <table class="table table-dark">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th>archivo</th>
+                                                <th>Folder ID</th>
+                                                <th>Ruta</th>
+                                                <th>Ruta ZIP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>{{ backup.file }}</td>
+                                                <td>{{ backup.folder_id }}</td>
+                                                <td>{{ backup.ruta }}</td>
+                                                <td>{{ backup.ruta_zip }}</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th>archivo</th>
+                                                <th>Folder ID</th>
+                                                <th>Ruta</th>
+                                                <th>Ruta ZIP</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card mb-3">
+                                <div class="terminal-container">
+                                    <div class="terminal-header">
+                                        <span>Terminal</span>
+                                    </div>
+                                    <div class="terminal-output">
+                                        <div class="terminal-line">
+                                            <span class="command-prompt">prompt></span>
+                                            <span class="output-text"> {{ output_text }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
+    {% include 'scripts.html' %}
+</body>
+
+</html>

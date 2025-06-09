@@ -1,0 +1,38 @@
+.terminal-container {
+    width: 100%;
+    height: auto;
+    border: 1px solid #ccc;
+    font-family: monospace;
+    background-color: #222;
+    color: #fff;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.terminal-header {
+    font-size: 14px;
+    color: #fff;
+    padding: 5px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #fff;
+}
+
+.terminal-output {
+    overflow-y: scroll;
+    /* Permite la barra de desplazamiento vertical */
+    height: 250px;
+    padding: 10px;
+}
+
+.terminal-line {
+    margin-bottom: 5px;
+}
+
+.command-prompt {
+    color: #0f0;
+    font-weight: bold;
+}
+
+.output-text {
+    color: #fff;
+}

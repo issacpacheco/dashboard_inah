@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>TREN DE CARGA - Panel</title>
+    {% include 'head.html' %}
+</head>
+
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}">
+                                                <i class="fal fa-home"></i>
+                                            </a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a href="{{ url_for('files') }}">Navegador de archivos</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                    <h3>Repositorio de archivos en Google Drive</h3>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
+    {% include 'scripts.html' %}
+</body>
+
+</html>
