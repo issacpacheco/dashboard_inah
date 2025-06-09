@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, abort
+from flask_autoindex import AutoIndex
 from descargar_drive import DriveBackup
 from flask_bcrypt import Bcrypt
 import MySQLdb
+import os
 
 app = Flask(__name__)
 app.secret_key = 'tu_clave_secreta'
@@ -213,11 +215,9 @@ def backup():
 
     return render_template("backup.html", **context)
 
-@app.route('/files', methods=['GET', 'POST'])
+
+@app.route('/files')
 def files():
-    # Implementar la lógica para mostrar los archivos
-    # Obtendremos el id de la carpeta con la informacion de la base de datos relacionada al usuario
-    # Obtener configuración del usuario
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -229,29 +229,75 @@ def files():
         conn.close()
         flash("Usuario no encontrado.")
         return redirect(url_for('logout'))
-    
-    #Obtenemos las carpetas y el id del drive
+
     id_usuario = user[0]
     cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (id_usuario,))
     config = cur.fetchone()
 
+    cur.close()
+    conn.close()
+
     if not config:
-        cur.close()
-        conn.close()
-        flash("Configuración no encontrada.")
+        flash("Configuración no encontrada.")
         return redirect(url_for('logout'))
 
     folder_id = config[3]
-    folder_path = config[4]
+    return redirect(url_for('explorer', folder_id=folder_id))
 
-    # Procesamos la información para buscarlo en el archivo local
-    ruta_local = folder_path, folder_id
-    
+@app.route('/files/<folder_id>/', defaults={'req_path': ''})
+@app.route('/files/<folder_id>/<path:req_path>')
+def explorer(folder_id, req_path):
+    print("Empieza files")
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    # Obtener usuario desde la sesión
+    cur.execute("SELECT * FROM usuarios WHERE correo = %s", (session['username'],))
+    user = cur.fetchone()
+
+    if not user:
+        cur.close()
+        conn.close()
+        flash("Usuario no encontrado.")
+        return redirect(url_for('logout'))
+
+    session['user_id'] = user[0]
+
+    # Obtener configuración del usuario
+    cur.execute("SELECT * FROM usuarios_configuracion WHERE id_usuario = %s", (session['user_id'],))
+    config = cur.fetchone()
     cur.close()
     conn.close()
-        
-    response = make_response(render_template('files.html'))
-    return add_no_cache_headers(response)
+
+    if not config:
+        flash("Configuración no encontrada.")
+        return redirect(url_for('logout'))
+
+    base_path = config[4]         # Ruta local al respaldo
+    folder_id_config = config[3]  # folder_id real del drive (no se usa en la navegación local)
+
+    req_path = req_path.strip('/')
+    abs_path = os.path.join(base_path, req_path)
+
+    if not os.path.exists(abs_path):
+        return abort(404)
+
+    if os.path.isfile(abs_path):
+        return send_file(abs_path, as_attachment=True)
+
+    files = os.listdir(abs_path)
+    files.sort()
+
+    return render_template(
+        'files.html',
+        files=files,
+        folder_id=folder_id,      # el mismo que vino por URL
+        current_path=req_path,    # usado en la vista para la navegación
+        abs_path=abs_path,
+        os=os                     # pasamos el módulo os para usar en la plantilla
+    )
+
 
 @app.route('/logout')
 def logout():

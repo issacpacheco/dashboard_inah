@@ -29,25 +29,85 @@
                                             </a>
                                         </li>
                                         <li class="breadcrumb-item active" aria-current="page">
-                                            <a href="{{ url_for('files') }}">Navegador de archivos</a>
+                                            <a href="{{ url_for('explorer', folder_id=folder_id)}}">Repositorio</a>
                                         </li>
                                     </ol>
                                 </nav>
                             </div>
                         </div>
                     </div>
-                    <h3>Repositorio de archivos en Google Drive</h3>
+                    <h3>📁 Repositorio de archivos</h3>
                     <div class="row">
                         <div class="col-sm-12">
-                            
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <p class="text-muted">Ruta actual: /{{ current_path }}</p>
+
+                                    {% if files %}
+                                    <div class="list-group mt-3">
+
+                                        {% if current_path %}
+                                        <a href="{{ url_for('explorer', folder_id=folder_id, req_path=current_path.rsplit('/', 1)[0]) }}"
+                                            class="list-group-item list-group-item-action">
+                                            🔙 Subir un nivel
+                                        </a>
+                                        {% endif %}
+
+                                        {% for file in files %}
+                                        {% set file_path = current_path + '/' + file if current_path else file %}
+                                        {% set full_path = os.path.join(abs_path, file) %}
+
+                                        {% if os.path.isdir(full_path) %}
+                                        <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
+                                            class="list-group-item list-group-item-action">
+                                            📁 {{ file }}
+                                        </a>
+                                        {% else %}
+                                        <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
+                                            class="list-group-item list-group-item-action" target="_blank">
+                                            📄 {{ file }}
+                                        </a>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-warning mt-4">No se encontraron archivos en esta carpeta.
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
             {% include 'footer.html' %}
         </div>
+        <!--Modal para visualizar documentos-->
+        <div class="modal fade" id="ModalVisualizar" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
+            aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Visualizar documento</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <iframe id="iframe" width="100%" height="600px"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     {% include 'scripts.html' %}
+
+    <script>
+        function VisualizarDocumento(url) {
+            $("#ModalVisualizar").modal("show");
+            $("#iframe").attr("src", url);
+        }
+    </script>
 </body>
 
 </html>
