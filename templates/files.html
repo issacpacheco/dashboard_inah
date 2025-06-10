@@ -60,12 +60,9 @@
                                         {% endif %}
 
                                         {% for file in files %}
-                                        {% set file_path = current_path + '/' + file if current_path else file %}
-                                        {% set full_path = os.path.join(abs_path, file) %}
-                                        {% set ruta_servidor = 'http://127.0.0.1:5000/backup/' %}
-                                        {% set ruta_archivo = (ruta_servidor ~ file_path) | tojson | replace(' ', '%20')
-                                        | replace('(', '%28') | replace(')', '%29') %}
-                                        {% set extension = file.split('.')[-1]|lower %}
+                                        {% set file_path = current_path + '/' + file.name if current_path else file.name
+                                        %}
+                                        {% set extension = file.name.split('.')[-1]|lower %}
                                         {% set icon = '📄' %}
                                         {% if extension in ['pdf'] %}
                                         {% set icon = '📕' %}
@@ -79,19 +76,23 @@
                                         {% set icon = '📊' %}
                                         {% endif %}
 
-                                        {% if os.path.isdir(full_path) %}
+                                        {% if file.is_dir %}
                                         <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
-                                            class="list-group-item list-group-item-action">
-                                            📁 {{ file }}
+                                            class="list-group-item list-group-item-action"
+                                            title="{{ file.count }} elementos">
+                                            📁 {{ file.name }} <span class="text-muted small">({{ file.count }}
+                                                archivos)</span>
                                         </a>
                                         {% else %}
                                         <a href="javascript:void(0)"
-                                            onclick='VisualizarDocumento({{ ruta_archivo }}, "{{ extension }}")'
-                                            class="list-group-item list-group-item-action">
-                                            {{ icon }} {{ file }}
+                                            onclick='VisualizarDocumento("{{ url_for("static", filename="backup/" + file_path) }}", "{{ extension }}")'
+                                            class="list-group-item list-group-item-action" title="{{ file.size }} KB">
+                                            {{ icon }} {{ file.name }} <span class="text-muted small">({{ file.size }}
+                                                KB)</span>
                                         </a>
                                         {% endif %}
                                         {% endfor %}
+
                                     </div>
                                     {% else %}
                                     <div class="alert alert-warning mt-4">
@@ -138,9 +139,7 @@
 
             if (visualizables.includes(ext.toLowerCase())) {
                 if (['xlsx', 'xls', 'doc', 'docx'].includes(ext.toLowerCase())) {
-                    // Google Docs Viewer solo funciona con archivos accesibles públicamente en internet.
-                    // Si tu archivo está en localhost o detrás de autenticación, Google no podrá accederlo.
-                    // url = "https://view.officeapps.live.com/op/view.aspx?src=" + url;
+                    // Para archivos de Excel y Word
                     url = "https://docs.google.com/viewer?url=" + encodeURIComponent(url) + "&embedded=true";
                     $("#iframe").attr("src", url);
                 } else {

@@ -60,11 +60,12 @@
                                     <tbody>
                                         {% for config_drive in config_drive %}
                                         <tr>
-                                            <td>{{config_drive.nombre}}</td>
-                                            <td>{{config_drive.folder_id}}</td>
-                                            <td>Config. JSON: {{config_drive.ruta_json}}<br>
-                                                Config. local: {{config_drive.ruta_local}}<br>
-                                                Config. ZIP: {{config_drive.ruta_zip}}
+                                            <td>{{ config_drive.nombre }}</td>
+                                            <td>{{ config_drive.folder_id }}</td>
+                                            <td>
+                                                Config. JSON: {{ config_drive.ruta_json }}<br>
+                                                Config. local: {{ config_drive.ruta_local }}<br>
+                                                Config. ZIP: {{ config_drive.ruta_zip }}
                                             </td>
                                             <td>
                                                 <a class="btn btn-primary" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='editar') }}"><i class="fal fa-edit"></i> Editar</a>

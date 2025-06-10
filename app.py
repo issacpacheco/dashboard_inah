@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.utils import safe_join
 from flask_autoindex import AutoIndex
 from script.descargar_drive import DriveBackup
+from script.registros_excavaciones import ExportExcel
 from flask_bcrypt import Bcrypt
 import MySQLdb
 import os
@@ -108,20 +109,21 @@ def config_drive():
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT * FROM config_drive")
-    config_drive = cur.fetchone()
+    config_drive = cur.fetchall()
     cur.close()
 
 
     arreglo_config_drive = []
     if config_drive:
-        arreglo_config_drive.append({
-            'id': config_drive[0],
-            'nombre' : config_drive[1],
-            'folder_id': config_drive[2],
-            'ruta_json': config_drive[3],
-            'ruta_local': config_drive[4],
-            'ruta_zip': config_drive[5]
-        })
+        for drive in config_drive:
+            arreglo_config_drive.append({
+                'id': drive[0],
+                'nombre' : drive[1],
+                'folder_id': drive[2],
+                'ruta_json': drive[3],
+                'ruta_local': drive[4],
+                'ruta_zip': drive[5]
+            })
 
 
     response = make_response(render_template('config_drive/config_drive.html', config_drive=arreglo_config_drive))
@@ -207,9 +209,11 @@ def config_drive_abc():
 def backup():
     global backup_instance
     zip_file = None
+
     if request.method == 'POST':
         accion = request.form.get('accion')
         id = request.form.get('id')
+
         if accion == "detener_respaldo":
             if backup_instance:
                 backup_instance.detener_backup()
@@ -218,13 +222,13 @@ def backup():
             else:
                 flash("No hay un respaldo en curso.")
             return redirect(url_for('backup'))
+
         elif accion == 'iniciar_respaldo':
             conn = get_db_connection()
             cur = conn.cursor()
 
             cur.execute("SELECT * FROM config_drive WHERE id = %s", (id,))
             config_drive = cur.fetchone()
-
             cur.close()
             conn.close()
 
@@ -247,31 +251,39 @@ def backup():
                     zip_output=zip_path
                 )
                 zip_file = backup_instance.run()
-                #Mostramos los archivos descargados
                 return make_response(render_template('respaldo.html', output_text=backup_instance.messages))
             except Exception as e:
                 flash(f"Error al iniciar el respaldo: {str(e)}")
+                return redirect(url_for('backup'))
 
-            return send_file(zip_file, as_attachment=True)
+        elif accion == 'actualizar_registros':
+            codigo = request.form.get('codigo_poligono')
+            if not codigo:
+                flash("No se proporcionó el código de polígono.")
+            else:
+                exportador = ExportExcel(codigo)
+                exportador.procesar_codigo_poligono()
+                flash('Exportación realizada exitosamente.')
+
         else:
             flash("Acción no reconocida.", "error")
 
+    # GET: Cargar configuraciones
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT * FROM config_drive")
-    config_drive = cur.fetchone()
+    config_drive = cur.fetchall()
     cur.close()
+    conn.close()
 
-    arreglo_config_drive = []
-    if config_drive:
-        arreglo_config_drive.append({
-            'id': config_drive[0],
-            'nombre' : config_drive[1],
-            'folder_id': config_drive[2],
-            'ruta_json': config_drive[3],
-            'ruta_local': config_drive[4],
-            'ruta_zip': config_drive[5]
-        })
+    arreglo_config_drive = [{
+        'id': drive[0],
+        'nombre': drive[1],
+        'folder_id': drive[2],
+        'ruta_json': drive[3],
+        'ruta_local': drive[4],
+        'ruta_zip': drive[5]
+    } for drive in config_drive]
 
     response = make_response(render_template('respaldo.html', config_drive=arreglo_config_drive))
     return add_no_cache_headers(response)
@@ -308,9 +320,9 @@ def explorer(folder_id, req_path):
             'zip_path': config[5]
         })
 
-    name_folder = config[1]       # Nombre de la carpeta que se va a descargar
-    base_path = config[4]         # Ruta local al respaldo
-    folder_id_config = config[3]  # folder_id real del drive (no se usa en la navegación local)
+    name_folder = config[1]
+    base_path = config[4]
+    folder_id_config = config[3]
 
     req_path = req_path.strip('/')
     abs_path = os.path.join(base_path, req_path)
@@ -321,8 +333,26 @@ def explorer(folder_id, req_path):
     if os.path.isfile(abs_path):
         return send_file(abs_path, as_attachment=True)
 
-    files = os.listdir(abs_path)
-    files.sort()
+    raw_files = os.listdir(abs_path)
+    raw_files.sort()
+
+    files = []
+    for filename in raw_files:
+        full_path = os.path.join(abs_path, filename)
+        if os.path.isdir(full_path):
+            files.append({
+                'name': filename,
+                'is_dir': True,
+                'count': len(os.listdir(full_path)),
+                'size': None
+            })
+        else:
+            files.append({
+                'name': filename,
+                'is_dir': False,
+                'count': None,
+                'size': round(os.path.getsize(full_path) / 1024, 2)  # Tamaño en KB
+            })
 
     return render_template(
         'files.html',

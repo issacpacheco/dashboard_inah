@@ -29,7 +29,7 @@
                                             </a>
                                         </li>
                                         <li class="breadcrumb-item active" aria-current="page">
-                                            <a href="{{ url_for('backup') }}">Backup</a>
+                                            <a href="{{ url_for('backup') }}">Respaldos</a>
                                         </li>
                                     </ol>
                                 </nav>
@@ -65,12 +65,14 @@
                                                         <form action="{{ url_for('backup') }}" method="post">
                                                             <input type="hidden" name="id" value="{{config_drive.id}}">
                                                             <input type="hidden" name="accion" value="iniciar_respaldo">
-                                                            <button class="btn btn-primary btn-sm mb-1" type="submit"><i class="fal fa-sync"></i> Iniciar respaldo</button>
+                                                            <button class="btn btn-primary btn-sm mb-1" type="submit"><i
+                                                                    class="fal fa-sync"></i> Iniciar respaldo</button>
                                                         </form>
                                                         <form action="{{ url_for('backup') }}" method="post">
                                                             <input type="hidden" name="id" value="{{config_drive.id}}">
                                                             <input type="hidden" name="accion" value="detener_respaldo">
-                                                            <button class="btn btn-danger btn-sm mb-1" type="submit"><i class="fal fa-stop"></i> Detener respaldo</button>
+                                                            <button class="btn btn-danger btn-sm mb-1" type="submit"><i
+                                                                    class="fal fa-stop"></i> Detener respaldo</button>
                                                         </form>
                                                     </td>
                                                 </tr>
@@ -89,7 +91,7 @@
                                 {% endif %}
                                 {% endwith %}
                             </div>
-                            <div class="card mb-3">
+                            <!-- <div class="card mb-3">
                                 <div class="terminal-container">
                                     <div class="terminal-header">
                                         <span>Terminal</span>
@@ -99,6 +101,48 @@
                                             <span class="command-prompt">prompt></span>
                                             <span class="output-text"> {{ output_text }}</span>
                                         </div>
+                                    </div>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+                    <h3>Actualizar registros de excavaciones</h3>
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card mb-4">
+                                <div class="card-header">Actualizar registros</div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        {% if not config_drive %}
+                                        <div class="alert alert-info mt-3">
+                                            No se encontraron registros de excavaciones.
+                                        </div>
+                                        {% endif %}
+                                        <table class="table table-striped table-hover table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nombre</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for config_drive in config_drive %}
+                                                <tr>
+                                                    <td>{{config_drive.nombre}}</td>
+                                                    <td>
+                                                        <form method="post">
+                                                            <input type="hidden" name="id"
+                                                                value="{{config_drive.nombre}}">
+                                                            <input type="hidden" name="accion" value="actualizar">
+                                                            <button class="btn btn-primary btn-sm mb-1" type="button"
+                                                                onclick="confirmarActualizacion('{{config_drive.nombre}}')"><i
+                                                                    class="fal fa-sync"></i> Actualizar</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -111,5 +155,23 @@
     </div>
     {% include 'scripts.html' %}
 </body>
+<script>
+    function confirmarActualizacion(nombre) {
+        var confirmar = confirm("¿Desea actualizar los registros de la excavación " + nombre + "?");
+        if (confirmar) {
+            $.ajax({
+                url: "{{ url_for('backup') }}",
+                method: "POST",
+                data: {
+                    id: nombre,
+                    accion: "actualizar_registros"
+                },
+                success: function (response) {
+                    alert(response);
+                }
+            });
+        }
+    }
+</script>
 
 </html>
