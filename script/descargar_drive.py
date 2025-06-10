@@ -21,7 +21,8 @@ class DriveBackup:
     def get_db_connection():
         return MySQLdb.connect(**DB_CONFIG)
 
-    def __init__(self, credentials_path, folder_ids, output_dir, zip_output):
+    def __init__(self, name_folder, credentials_path, folder_ids, output_dir, zip_output):
+        self.name_folder = name_folder
         self.credentials_path = credentials_path
         self.folder_ids = folder_ids if isinstance(folder_ids, list) else [folder_ids]
         self.output_dir = output_dir
@@ -215,7 +216,7 @@ class DriveBackup:
         self.ensure_dir(self.zip_output)
 
         for folder_id in self.folder_ids:
-            self.process_folder(folder_id, os.path.join(self.output_dir, folder_id), self.service)
+            self.process_folder(folder_id, os.path.join(self.output_dir, self.name_folder), self.service)
             return self.messages 
 
         zip_path = self.zip_directory()

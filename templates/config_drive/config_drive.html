@@ -47,33 +47,34 @@
                                 No se encontraron configuraciones de respaldo.
                             </div>
                             {% endif %}
-                            <table class="table table-light">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Folder ID</th>
-                                        <th>Ruta JSON</th>
-                                        <th>Ruta</th>
-                                        <th>Ruta ZIP</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
+                            <div class="table-responsive">
+                                <table class="table table-light">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Folder ID</th>
+                                            <th>Configuración de rutas</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                         {% for config_drive in config_drive %}
-                                        <td>{{config_drive.nombre}}</td>
-                                        <td>{{config_drive.folder_id}}</td>
-                                        <td>{{config_drive.ruta_json}}</td>
-                                        <td>{{config_drive.ruta_local}}</td>
-                                        <td>{{config_drive.ruta_zip}}</td>
-                                        <td>
-                                            <a class="btn btn-primary" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='editar') }}"><i class="fal fa-edit"></i> Editar</a>
-                                            <a class="btn btn-danger" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='eliminar') }}"><i class="fal fa-trash"></i> Eliminar</a>
-                                        </td>
+                                        <tr>
+                                            <td>{{config_drive.nombre}}</td>
+                                            <td>{{config_drive.folder_id}}</td>
+                                            <td>Config. JSON: {{config_drive.ruta_json}}<br>
+                                                Config. local: {{config_drive.ruta_local}}<br>
+                                                Config. ZIP: {{config_drive.ruta_zip}}
+                                            </td>
+                                            <td>
+                                                <a class="btn btn-primary" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='editar') }}"><i class="fal fa-edit"></i> Editar</a>
+                                                <a class="btn btn-danger" href="{{ url_for('config_drive_abc', id=config_drive.id, accion='eliminar') }}"><i class="fal fa-trash"></i> Eliminar</a>
+                                            </td>
+                                        </tr>
                                         {% endfor %}
-                                    </tr>
-                                </tbody>
-                            </table>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

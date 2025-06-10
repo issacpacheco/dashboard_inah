@@ -1,14 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
-    <title>TREN DE CARGA - Panel</title>
+    <title>TREN DE CARGA - Repositorio</title>
     {% include 'head.html' %}
+    <style>
+        .file-icon {
+            margin-right: 10px;
+        }
+
+        iframe {
+            border: none;
+        }
+    </style>
 </head>
 
 <body class="sb-nav-fixed">
@@ -24,19 +31,19 @@
                                 <nav aria-label="breadcrumb">
                                     <ol class="breadcrumb mb-0">
                                         <li class="breadcrumb-item">
-                                            <a href="{{ url_for('panel') }}">
-                                                <i class="fal fa-home"></i>
-                                            </a>
+                                            <a href="{{ url_for('panel') }}"><i class="fal fa-home"></i></a>
                                         </li>
                                         <li class="breadcrumb-item active" aria-current="page">
-                                            <a href="{{ url_for('explorer', folder_id=folder_id)}}">Repositorio</a>
+                                            <a href="{{ url_for('explorer', folder_id=folder_id) }}">Repositorio</a>
                                         </li>
                                     </ol>
                                 </nav>
                             </div>
                         </div>
                     </div>
+
                     <h3>📁 Repositorio de archivos</h3>
+
                     <div class="row">
                         <div class="col-sm-12">
                             <div class="card mb-4">
@@ -45,7 +52,6 @@
 
                                     {% if files %}
                                     <div class="list-group mt-3">
-
                                         {% if current_path %}
                                         <a href="{{ url_for('explorer', folder_id=folder_id, req_path=current_path.rsplit('/', 1)[0]) }}"
                                             class="list-group-item list-group-item-action">
@@ -56,6 +62,22 @@
                                         {% for file in files %}
                                         {% set file_path = current_path + '/' + file if current_path else file %}
                                         {% set full_path = os.path.join(abs_path, file) %}
+                                        {% set ruta_servidor = 'http://127.0.0.1:5000/backup/' %}
+                                        {% set ruta_archivo = (ruta_servidor ~ file_path) | tojson | replace(' ', '%20')
+                                        | replace('(', '%28') | replace(')', '%29') %}
+                                        {% set extension = file.split('.')[-1]|lower %}
+                                        {% set icon = '📄' %}
+                                        {% if extension in ['pdf'] %}
+                                        {% set icon = '📕' %}
+                                        {% elif extension in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                        {% set icon = '🖼️' %}
+                                        {% elif extension in ['mp4', 'mov', 'avi'] %}
+                                        {% set icon = '🎬' %}
+                                        {% elif extension in ['doc', 'docx'] %}
+                                        {% set icon = '📝' %}
+                                        {% elif extension in ['xls', 'xlsx'] %}
+                                        {% set icon = '📊' %}
+                                        {% endif %}
 
                                         {% if os.path.isdir(full_path) %}
                                         <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
@@ -63,23 +85,17 @@
                                             📁 {{ file }}
                                         </a>
                                         {% else %}
-                                        <!-- <a href="{{ url_for('explorer', folder_id=folder_id, req_path=file_path) }}"
-                                            class="list-group-item list-group-item-action" target="_blank">
-                                            📄 {{ file }}
-                                        </a> -->
-                                        <!--Ancla para visualizar documentos y omitir la descarga-->
                                         <a href="javascript:void(0)"
-                                            onclick='VisualizarDocumento({{ full_path | tojson }});'
+                                            onclick='VisualizarDocumento({{ ruta_archivo }}, "{{ extension }}")'
                                             class="list-group-item list-group-item-action">
-                                            {{ file }}
+                                            {{ icon }} {{ file }}
                                         </a>
-
-
                                         {% endif %}
                                         {% endfor %}
                                     </div>
                                     {% else %}
-                                    <div class="alert alert-warning mt-4">No se encontraron archivos en esta carpeta.
+                                    <div class="alert alert-warning mt-4">
+                                        No se encontraron archivos en esta carpeta.
                                     </div>
                                     {% endif %}
                                 </div>
@@ -90,31 +106,53 @@
             </main>
             {% include 'footer.html' %}
         </div>
-        <!--Modal para visualizar documentos-->
+
+        <!-- Modal de Visualización -->
         <div class="modal fade" id="ModalVisualizar" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
             aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLabel">Visualizar documento</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <h5 class="modal-title">Visualizar documento</h5>
+                        <a id="descargarBtn" class="btn btn-sm btn-primary ml-2" href="#" target="_blank">Descargar</a>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        <iframe id="iframe" width="100%" height="600px"></iframe>
+                        <iframe id="iframe" width="100%" height="600"></iframe>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
     {% include 'scripts.html' %}
 
     <script>
-        function VisualizarDocumento(url) {
-            console.log(url);
+        function VisualizarDocumento(url, ext) {
+            const visualizables = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'txt', 'html', 'xlsx', 'xls', 'doc', 'docx'];
+
             $("#ModalVisualizar").modal("show");
-            $("#iframe").attr("src", url);
+            $("#descargarBtn").attr("href", url);
+
+            if (visualizables.includes(ext.toLowerCase())) {
+                if (['xlsx', 'xls', 'doc', 'docx'].includes(ext.toLowerCase())) {
+                    // Google Docs Viewer solo funciona con archivos accesibles públicamente en internet.
+                    // Si tu archivo está en localhost o detrás de autenticación, Google no podrá accederlo.
+                    // url = "https://view.officeapps.live.com/op/view.aspx?src=" + url;
+                    url = "https://docs.google.com/viewer?url=" + encodeURIComponent(url) + "&embedded=true";
+                    $("#iframe").attr("src", url);
+                } else {
+                    $("#iframe").attr("src", url);
+                }
+            } else {
+                // Para archivos no visualizables
+                $("#iframe").attr("src", "about:blank");
+                setTimeout(() => {
+                    $("#iframe").contents().find("body").html("<div style='padding: 20px; color: red;'>No se puede visualizar este tipo de archivo. Puedes descargarlo usando el botón de arriba.</div>");
+                }, 500);
+            }
         }
     </script>
 </body>

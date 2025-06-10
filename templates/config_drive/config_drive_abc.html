@@ -49,22 +49,22 @@
                                         enctype="multipart/form-data">
                                         <label >Nombre de la configuración:</label>
                                         <input class="form-control" type="text" name="nombre"
-                                            value="{{ name }}"><br><br>
+                                            value="{{ nombre }}"><br><br>
                                         <label>Ruta del archivo JSON:</label><br>
                                         <input class="form-control" type="text" name="json_path"
-                                            value="{{ json_path }}"><br><br>
+                                            value="{{ ruta_json }}"><br><br>
 
                                         <label>ID del folder en Google Drive:</label><br>
                                         <input class="form-control" type="text" name="id_folder"
-                                            value="{{ id_folder }}"><br><br>
+                                            value="{{ folder_id }}"><br><br>
 
                                         <label>Ruta local de descarga:</label><br>
                                         <input class="form-control" type="text" name="download_path"
-                                            value="{{ download_path }}"><br><br>
+                                            value="{{ ruta_local }}"><br><br>
 
                                         <label>Ruta final del ZIP:</label><br>
                                         <input class="form-control" type="text" name="zip_path"
-                                            value="{{ zip_path }}"><br><br>
+                                            value="{{ ruta_zip }}"><br><br>
 
                                         <input type="hidden" name="accion" id="accion" value="{{ accion }}">
                                         <input type="hidden" name="id" id="id" value="{{ id }}">
