@@ -226,7 +226,6 @@ def backup():
         elif accion == 'iniciar_respaldo':
             conn = get_db_connection()
             cur = conn.cursor()
-
             cur.execute("SELECT * FROM config_drive WHERE id = %s", (id,))
             config_drive = cur.fetchone()
             cur.close()
@@ -258,15 +257,24 @@ def backup():
 
         elif accion == 'actualizar_registros':
             codigo = request.form.get('codigo_poligono')
+            print(">> Código recibido:", codigo)  # Temporal para depuración
+
             if not codigo:
-                flash("No se proporcionó el código de polígono.")
-            else:
+                flash("No se proporcionó el código de polígono.", "danger")
+                return redirect(url_for('backup'))
+
+            try:
                 exportador = ExportExcel(codigo)
-                exportador.procesar_codigo_poligono()
-                flash('Exportación realizada exitosamente.')
+                total = exportador.procesar_codigo_poligono()
+                flash(f"Exportación completada. Se actualizaron {total} registros.", "success")
+            except Exception as e:
+                flash(f"Error al actualizar registros: {str(e)}", "danger")
+
+            return redirect(url_for('backup'))
 
         else:
             flash("Acción no reconocida.", "error")
+            return redirect(url_for('backup'))
 
     # GET: Cargar configuraciones
     conn = get_db_connection()
@@ -287,6 +295,7 @@ def backup():
 
     response = make_response(render_template('respaldo.html', config_drive=arreglo_config_drive))
     return add_no_cache_headers(response)
+
 
 @app.route('/files')
 def files():    

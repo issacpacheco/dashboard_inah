@@ -128,15 +128,17 @@
                                             <tbody>
                                                 {% for config_drive in config_drive %}
                                                 <tr>
-                                                    <td>{{config_drive.nombre}}</td>
+                                                    <td>{{ config_drive.nombre }}</td>
                                                     <td>
-                                                        <form method="post">
-                                                            <input type="hidden" name="id"
-                                                                value="{{config_drive.nombre}}">
-                                                            <input type="hidden" name="accion" value="actualizar">
-                                                            <button class="btn btn-primary btn-sm mb-1" type="button"
-                                                                onclick="confirmarActualizacion('{{config_drive.nombre}}')"><i
-                                                                    class="fal fa-sync"></i> Actualizar</button>
+                                                        <form method="post" action="{{ url_for('backup') }}"
+                                                            onsubmit="return confirm('¿Desea actualizar los registros de la excavación {{ config_drive.nombre }}?')">
+                                                            <input type="hidden" name="accion"
+                                                                value="actualizar_registros">
+                                                            <input type="hidden" name="codigo_poligono"
+                                                                value="{{ config_drive.nombre }}">
+                                                            <button class="btn btn-primary btn-sm mb-1" type="submit">
+                                                                <i class="fal fa-sync"></i> Actualizar
+                                                            </button>
                                                         </form>
                                                     </td>
                                                 </tr>
@@ -144,6 +146,15 @@
                                             </tbody>
                                         </table>
                                     </div>
+                                    {% with messages = get_flashed_messages() %}
+                                    {% if messages %}
+                                    <div class="alert alert-info mt-3">
+                                        {% for message in messages %}
+                                        <p>{{ message }}</p>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    {% endwith %}
                                 </div>
                             </div>
                         </div>
