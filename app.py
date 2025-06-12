@@ -34,72 +34,10 @@ def add_no_cache_headers(response):
 
 @app.route('/')
 def index():
-    if 'username' in session:
-        return redirect(url_for('panel'))
-    return redirect(url_for('login'))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    if request.method == 'POST':
-        username = request.form['usuario']
-        contrasena = request.form['contrasena']
-
-        cur.execute('SELECT * FROM usuarios WHERE correo = %s', (username,))
-        user = cur.fetchone()
-
-        if user and bcrypt.check_password_hash(user[3], contrasena):
-            session['username'] = username
-            cur.close()
-            conn.close()
-            return redirect(url_for('panel'))
-        else:
-            flash('Usuario o contraseña incorrectos')
-            cur.close()
-            conn.close()
-            return redirect(url_for('login'))
-
-    response = make_response(render_template('login.html'))
-    return add_no_cache_headers(response)
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['usuario']
-        contrasena = request.form['contrasena']
-        hashed_password = bcrypt.generate_password_hash(contrasena).decode('utf-8')
-
-        conn = get_db_connection()
-        cur = conn.cursor()
-
-        cur.execute('SELECT * FROM usuarios WHERE correo = %s', (username,))
-        existing_user = cur.fetchone()
-        if existing_user:
-            cur.close()
-            conn.close()
-            flash('El usuario ya existe. Por favor, elige otro correo.')
-            return redirect(url_for('register'))
-
-        try:
-            cur.execute('INSERT INTO usuarios (correo, contrasena) VALUES (%s, %s)', (username, hashed_password))
-            conn.commit()
-            flash('Registro exitoso. Por favor, inicia sesión.')
-        except Exception as e:
-            flash('Error al registrar el usuario: {}'.format(str(e)))
-        finally:
-            cur.close()
-            conn.close()
-        return redirect(url_for('login'))
-
-    response = make_response(render_template('register.html'))
-    return add_no_cache_headers(response)
+    return redirect(url_for('panel'))
 
 @app.route('/panel')
 def panel():
-    if 'username' not in session:
-        return redirect(url_for('login'))
     response = make_response(render_template('panel.html'))
     return add_no_cache_headers(response)
 
@@ -316,7 +254,7 @@ def explorer(folder_id, req_path):
 
     if not config:
         flash("Configuración no encontrada.")
-        return redirect(url_for('logout'))
+        # return redirect(url_for('logout'))
 
     arreglo_config = []
     if config:
@@ -393,11 +331,11 @@ def view_file(file_path):
     # Envía el archivo sin forzar la descarga
     return send_from_directory(directory, filename, as_attachment=False)
 
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    response = make_response(redirect(url_for('login')))
-    return add_no_cache_headers(response)
+# @app.route('/logout')
+# def logout():
+#     session.pop('username', None)
+#     response = make_response(redirect(url_for('login')))
+#     return add_no_cache_headers(response)
 
 if __name__ == '__main__':
     app.run(debug=True)
