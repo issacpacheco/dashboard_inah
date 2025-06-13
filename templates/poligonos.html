@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>TREN DE CARGA - Repositorio</title>
+    {% include 'head.html' %}
+    <style>
+        .file-icon {
+            margin-right: 10px;
+        }
+
+        iframe {
+            border: none;
+        }
+    </style>
+</head>
+
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}"><i class="fal fa-home"></i></a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a
+                                                href="{{ url_for('poligonos', nombre_poligono=nombre_poligono, id_monumento=id_monumento) }}">Poligono:
+                                                {{ nombre_poligono }} - Monumento: {{ id_monumento }}</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Lista de monumentos</h3>
+
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    {% if poligonos %}
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Poligono</th>
+                                                    <th>Tramo</th>
+                                                    <th>ID Monumento</th>
+                                                    <th>ID Arqueologo</th>
+                                                    <th>Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for p in poligonos %}
+                                                <tr>
+                                                    <td>{{ p.codigo_poligono }}</td>
+                                                    <td>{{ p.tramo }}</td>
+                                                    <td>{{ p.clave_registro }}</td>
+                                                    <td>{{ p.no_arqueologo }}</td>
+                                                    <td>
+                                                        <a class="btn btn-primary"
+                                                            href="{{ url_for('poligonos', nombre_poligono=p.codigo_poligono, id_monumento=p.clave_registro) }}"><i
+                                                                class="fal fa-eye"></i> Ver</a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% elif monumentos %}
+                                    <!--Agregamos un boton para exportar en geopackage-->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <button id="btnDescargarGPKG" class="btn btn-success">
+                                            <i class="fal fa-download"></i> Descargar GeoPackage
+                                        </button>
+                                        <span id="mensajeExportacion" class="ms-3 text-muted"
+                                            style="display:none;">Generando archivo...</span>
+                                    </div>
+
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped" id="dataTable" width="100%"
+                                            cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>Clave excavación</th>
+                                                    <th>tramo</th>
+                                                    <th>ID Monumento</th>
+                                                    <th>No. Arqueologo</th>
+                                                    <th>Punto de georeferencia</th>
+                                                    <th>Codigo</th>
+                                                    <th>ID Topografo</th>
+                                                    <th>No. bolsa</th>
+                                                    <th>Procedencia</th>
+                                                    <th>Contexto de excavación</th>
+                                                    <th>Tipo de excavación</th>
+                                                    <th>Coordenada X</th>
+                                                    <th>Coordenada Y</th>
+                                                    <th>Capa</th>
+                                                    <th>Meterial</th>
+                                                    <th>Materia prima</th>
+                                                    <th>Asociación</th>
+                                                    <th>Descripción del punto</th>
+                                                    <th>Descripçión de estrato</th>
+                                                    <th>Fecha de registro</th>
+                                                    <th>Foto 1</th>
+                                                    <th>Foto 2</th>
+                                                    <th>Foto 3</th>
+                                                    <th>Foto 4</th>
+                                                    <th>N</th>
+                                                    <th>E</th>
+                                                    <th>Z</th>
+                                                    <th>Codigo topografico</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for m in monumentos %}
+                                                <tr>
+                                                    <td>{{ m.clave_excavacion }}</td>
+                                                    <td>{{ m.tramo }}</td>
+                                                    <td>{{ m.id_monumento }}</td>
+                                                    <td>{{ m.no_arqueologo }}</td>
+                                                    <td>{{ m.punto_georeferencia }}</td>
+                                                    <td>{{ m.codigo }}</td>
+                                                    <td>{{ m.id_topografo }}</td>
+                                                    <td>{{ m.no_bolsa }}</td>
+                                                    <td>{{ m.procedencia }}</td>
+                                                    <td>{{ m.contexto_excavacion }}</td>
+                                                    <td>{{ m.tipo_excavacion }}</td>
+                                                    <td>{{ m.coordenada_x }}</td>
+                                                    <td>{{ m.coordenada_y }}</td>
+                                                    <td>{{ m.capa }}</td>
+                                                    <td>{{ m.material }}</td>
+                                                    <td>{{ m.materia_prima }}</td>
+                                                    <td>{{ m.asociacion }}</td>
+                                                    <td>{{ m.descripcion_punto }}</td>
+                                                    <td>{{ m.descripcion_estrato }}</td>
+                                                    <td>{{ m.fecha_registro }}</td>
+                                                    <td>{{ m.foto_1 }}</td>
+                                                    <td>{{ m.foto_2 }}</td>
+                                                    <td>{{ m.foto_3 }}</td>
+                                                    <td>{{ m.foto_4 }}</td>
+                                                    <td>{{ m.n }}</td>
+                                                    <td>{{ m.e }}</td>
+                                                    <td>{{ m.z }}</td>
+                                                    <td>{{ m.codigo_topo }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
+
+    {% include 'scripts.html' %}
+</body>
+<script>
+    // var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    // var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    //     return new bootstrap.Tooltip(tooltipTriggerEl)
+    // });
+    // $('#dataTable').DataTable({
+    //     "language": {
+    //         url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json"
+    //     },
+    //     "ordering": true,
+    //     "paging": true,
+    //     "searching": true,
+    //     "info": true,
+    //     "orderCellTop": true,
+    //     "fixedHeader": true,
+    //     "autoFill": false,
+    //     "colReorder": false,
+    //     "fixedColumns": false,
+    //     "responsive": true,
+    //     "dom": 'Bfrtip',
+    //     "pageLength": 50,
+    //     "order": [
+    //         [2, "desc"]
+    //     ],
+    //     "buttons": [{
+    //         extend: 'excel',
+    //         exportOptions: {
+    //             columns: [0, 1, 2]
+    //         },
+    //         text: 'Excel <i class="fal fa-file-excel"></i>',
+    //         messageTop: '',
+    //         footer: true
+    //     },
+    //     {
+    //         extend: 'pdfHtml5',
+    //         orientation: 'landscape',
+    //         exportOptions: {
+    //             columns: [0, 1, 2]
+    //         },
+    //         text: 'PDF <i class="fal fa-file-pdf"></i>',
+    //         messageTop: '',
+    //         footer: true
+    //     },
+    //     {
+    //         extend: 'print',
+    //         exportOptions: {
+    //             columns: [0, 1, 2]
+    //         },
+    //         text: 'Imprimir <i class="fal fa-print"></i>',
+    //         messageTop: '',
+    //         footer: true
+    //     },
+    //     ]
+    // });
+
+    // $('#dataTable thead tr').clone(true).appendTo('#dataTable thead');
+
+    // $('#dataTable thead tr:eq(1) th').each(function (i) {
+    //     var title = $(this).text(); //es el nombre de la columna
+    //     $(this).html('<input type="text" placeholder="Search...' + title + '" />');
+
+    //     $('input', this).on('keyup change', function () {
+    //         if (table.column(i).search() !== this.value) {
+    //             table
+    //                 .column(i)
+    //                 .search(this.value)
+    //                 .draw();
+    //         }
+    //     });
+    // });  
+    $(document).ready(function () {
+        var table = $('#dataTable').DataTable({
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json"
+            },
+            orderCellsTop: true,
+            fixedHeader: true,
+            ordering: true,
+            paging: true,
+            searching: true,
+            info: true,
+            autoFill: false,
+            colReorder: false,
+            fixedColumns: false,
+            responsive: true,
+            dom: 'Bfrtip',
+            pageLength: 10,
+            order: [
+                [0, "asc"]
+            ]
+        });
+
+        //Creamos una fila en el head de la tabla y lo clonamos para cada columna
+        $('#dataTable thead tr').clone(true).appendTo('#dataTable thead');
+
+        $('#dataTable thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text(); //es el nombre de la columna
+            $(this).html('<input type="text" placeholder="Buscar por ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search(this.value)
+                        .draw();
+                }
+            });
+        });
+    });
+
+    document.getElementById('btnDescargarGPKG').addEventListener('click', function () {
+        const boton = this;
+        const mensaje = document.getElementById('mensajeExportacion');
+        const nombre_poligono = "{{ nombre_poligono }}";  // Asegúrate de que esté disponible en el contexto Flask
+        const id_monumento = "{{ id_monumento }}";  // Asegúrate de que esté disponible en el contexto Flask
+
+        // Desactivar botón y mostrar mensaje
+        boton.disabled = true;
+        mensaje.style.display = 'inline';
+
+        // Generar URL y crear enlace invisible
+        const url = `/descargar_gpkg?nombre_poligono=${encodeURIComponent(nombre_poligono)}`+
+            `&id_monumento=${encodeURIComponent(id_monumento)}`;
+
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    console.log(response);
+                    throw new Error("Error al generar el archivo.");
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const enlace = document.createElement('a');
+                const urlBlob = URL.createObjectURL(blob);
+                enlace.href = urlBlob;
+                enlace.download = `registro_excavacion_topografia_${nombre_poligono}_${id_monumento}.gpkg`;
+                document.body.appendChild(enlace);
+                enlace.click();
+                enlace.remove();
+                URL.revokeObjectURL(urlBlob);
+            })
+            .catch(error => {
+                alert("❌ Error: " + error.message);
+            })
+            .finally(() => {
+                // Restaurar estado
+                boton.disabled = false;
+                mensaje.style.display = 'none';
+            });
+    });
+
+</script>
+
+</html>

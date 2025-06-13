@@ -6,6 +6,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 from google.oauth2 import service_account
 import MySQLdb
+import unicodedata
 
 DB_CONFIG = {
     'host': 'localhost',
@@ -22,11 +23,13 @@ class DriveBackup:
         return MySQLdb.connect(**DB_CONFIG)
 
     def __init__(self, name_folder, credentials_path, folder_ids, output_dir, zip_output):
-        self.name_folder = name_folder
+        self.name_folder = name_folder.rstrip()  # Elimina el espacio final del nombre de la carpeta
         self.credentials_path = credentials_path
         self.folder_ids = folder_ids if isinstance(folder_ids, list) else [folder_ids]
-        self.output_dir = output_dir
+        #Quitamos espacios al inicio y final 
+        self.output_dir = output_dir.strip()  # <-- Elimina espacios al inicio y final
         self.zip_output = zip_output
+        #Quitamos espacios al inicio y final 
         self.processed_folders = set()
         self.files_downloaded_counter = 0
         self.service = None
@@ -106,6 +109,7 @@ class DriveBackup:
 
         self.ensure_dir(folder_path)
         file_path = os.path.join(folder_path, file_name)
+        file_path = os.path.normpath(file_path)  # Normaliza el path del archivo
 
         for attempt in range(1, max_retries + 1):
             try:
@@ -132,6 +136,9 @@ class DriveBackup:
                     print(menssage)
                     self.messages.append(menssage)
 
+    def normalize(text):
+        return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('ASCII').lower().strip()
+
     def process_folder(self, folder_id, folder_path, drive_service):
         if folder_id in self.processed_folders:
             return
@@ -140,8 +147,32 @@ class DriveBackup:
         print(menssage)
         self.messages.append(menssage)
         self.ensure_dir(folder_path)
+        folder_name = os.path.basename(folder_path).rstrip()
+        folder_path = os.path.join(os.path.dirname(folder_path), folder_name)
         files = self.get_files_in_folder(folder_id)
         cursor = self.db_conn.cursor()
+
+        # Detectar carpeta BITACORA sin importar mayúsculas ni espacios
+        if folder_path.strip().upper().endswith('BITACORA'):
+            files = self.get_files_in_folder(folder_id)
+            print(f"🔍 Buscando 'Bitacora de enlaces.xlsx' en {folder_path}")
+            for file in files:
+                print(f"Archivo encontrado: {file['name']}")
+                if file['name'] == 'Bitacora de enlaces':
+                    file_id = file['id']
+                    self.download_file(file_id, file['name'], folder_path, file['mimeType'])
+                    self.detener_backup()
+                    return
+                else:
+                    menssage = f"🔍 No se encontró 'Bitacora de enlaces.xlsx' en {folder_path}"
+                    print(menssage)
+                    self.messages.append(menssage)
+                    return
+            # Si no se encuentra el archivo
+            menssage = f"❌ No se encontró 'Bitacora de enlaces.xlsx' en {folder_path}"
+            print(menssage)
+            self.messages.append(menssage)
+            return
 
         for file in files:
             file_id = file['id']
@@ -161,14 +192,9 @@ class DriveBackup:
                 continue
 
             if row:
-                cursor.execute("""
-                    UPDATE archivos SET fecha_modificacion = %s WHERE id_file = %s
-                """, (modified_time, file_id))
+                cursor.execute("""UPDATE archivos SET fecha_modificacion = %s WHERE id_file = %s""", (modified_time, file_id))
             else:
-                cursor.execute("""
-                    INSERT INTO archivos (id_file, nombre, tipo, fecha_modificacion)
-                    VALUES (%s, %s, %s, %s)
-                """, (file_id, file_name, mime_type, modified_time))
+                cursor.execute("""INSERT INTO archivos (id_file, nombre, tipo, fecha_modificacion) VALUES (%s, %s, %s, %s)""", (file_id, file_name, mime_type, modified_time))
 
             if mime_type == 'application/vnd.google-apps.shortcut':
                 target_id = file['shortcutDetails']['targetId']
@@ -176,7 +202,6 @@ class DriveBackup:
                     fileId=target_id,
                     fields='id, name, mimeType, modifiedTime'
                 ).execute()
-
                 if target_file['mimeType'] == 'application/vnd.google-apps.folder':
                     self.process_folder(target_id, os.path.join(folder_path, target_file['name']), self.service)
                 else:
@@ -184,14 +209,12 @@ class DriveBackup:
                         target_file['id'], target_file['name'], folder_path,
                         target_file['mimeType']
                     )
-                    self.files_downloaded_counter += 1
                 continue
 
             if mime_type == 'application/vnd.google-apps.folder':
                 self.process_folder(file_id, os.path.join(folder_path, file_name), self.service)
             else:
                 self.download_file(file_id, file_name, folder_path, mime_type)
-                self.files_downloaded_counter += 1
 
         self.db_conn.commit()
         cursor.close()
@@ -217,10 +240,9 @@ class DriveBackup:
 
         for folder_id in self.folder_ids:
             self.process_folder(folder_id, os.path.join(self.output_dir, self.name_folder), self.service)
-            return self.messages 
 
-        zip_path = self.zip_directory()
-        menssage = f"✅ Respaldo completado. ZIP generado: {zip_path}"
+        # zip_path = self.zip_directory()
+        # menssage = f"✅ Respaldo completado. ZIP generado: {zip_path}"
         print(menssage)
         self.messages.append(menssage)
-        return self.messages  # Return all messages for HTML display
+        return self.messages

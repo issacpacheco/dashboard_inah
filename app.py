@@ -1,8 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, abort, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash, make_response, send_file, abort, send_from_directory, jsonify
 from werkzeug.utils import safe_join
 from flask_autoindex import AutoIndex
+from pyngrok import ngrok  # Agregado
 from script.descargar_drive import DriveBackup
 from script.registros_excavaciones import ExportExcel
+from script.exportar_geopackage import ExportarGeoPackage
 from flask_bcrypt import Bcrypt
 import MySQLdb
 import os
@@ -40,6 +42,25 @@ def index():
 def panel():
     response = make_response(render_template('panel.html'))
     return add_no_cache_headers(response)
+
+@app.context_processor
+def cargar_menu():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT nombre FROM config_drive")
+        resultados = cur.fetchall()
+        cur.close()
+        conn.close()
+        if resultados:
+            menu = [{'nombre': item[0]} for item in resultados]
+        else:
+            menu = None
+        return dict(menu=menu)
+    except Exception as e:
+        print("Error al cargar el menú global:", e)
+        return dict(menu=None)
+
 
 @app.route('/config_drive/config_drive', methods=['GET', 'POST'])
 def config_drive():
@@ -243,7 +264,7 @@ def files():
 @app.route('/files/repositorios/<path:req_path>', defaults={'folder_id': ''})
 def explorer(folder_id, req_path):
     print("Empieza files")
-
+    
     conn = get_db_connection()
     cur = conn.cursor()
 
@@ -314,6 +335,7 @@ def explorer(folder_id, req_path):
 
 @app.route('/backup/<path:file_path>', methods=['GET'])
 def view_file(file_path):
+    
     # Define la ruta base donde están tus archivos respaldados
     base_dir = os.path.abspath('./backup')  # cámbiala a tu ruta real
 
@@ -331,11 +353,240 @@ def view_file(file_path):
     # Envía el archivo sin forzar la descarga
     return send_from_directory(directory, filename, as_attachment=False)
 
-# @app.route('/logout')
-# def logout():
-#     session.pop('username', None)
-#     response = make_response(redirect(url_for('login')))
-#     return add_no_cache_headers(response)
+@app.route('/poligonos/<string:nombre_poligono>/', defaults={'id_monumento': None}, methods=['GET', 'POST'])
+@app.route('/poligonos/<string:nombre_poligono>/<string:id_monumento>', methods=['GET', 'POST'])
+def poligonos(nombre_poligono, id_monumento):
+    arreglo_poligonos = []
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if id_monumento:
+        print(f"Consultando con polígono: {nombre_poligono} e id_monumento: {id_monumento}")
+        cur.execute("""
+            SELECT clave_excavacion, tramo, id_monumento, no_arqueologo, 
+                    punto_georeferencia, codigo, id_topografo, no_bolsa, 
+                    procedencia, contexto_excavacion, tipo_excavacion, 
+                    coordenada_x, coordenada_y, capa, material, meteria_prima, 
+                    asociacion, descripcion_punto, descripcion_estrato, fecha_registro, 
+                    foto_1, foto_2, foto_3, foto_4, n, e, z, codigo_topo  
+            FROM registro_excavacion_topografia 
+            WHERE id_monumento = %s AND codigo_poligono = %s
+        """, (id_monumento, nombre_poligono))
+
+        monumentos = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        #pasamos toda la informacion de la tabla sin agragarlo a un arreglo
+        arreglo_monumentos = []
+        for monumento in monumentos:
+            arreglo_monumentos.append({
+                'clave_excavacion': monumento[0],
+                'tramo': monumento[1],
+                'id_monumento': monumento[2],
+                'no_arqueologo': monumento[3],
+                'punto_georeferencia': monumento[4],
+                'codigo': monumento[5], 
+                'id_topografo': monumento[6],
+                'no_bolsa': monumento[7],
+                'procedencia': monumento[8],
+                'contexto_excavacion': monumento[9],
+                'tipo_excavacion': monumento[10],
+                'coordenada_x': monumento[11],
+                'coordenada_y': monumento[12],
+                'capa': monumento[13],
+                'material': monumento[14],
+                'meteria_prima': monumento[15],
+                'asociacion': monumento[16],
+                'descripcion_punto': monumento[17],
+                'descripcion_estrato': monumento[18],
+                'fecha_registro': monumento[19],
+                'foto_1': monumento[20],
+                'foto_2': monumento[21],
+                'foto_3': monumento[22],
+                'foto_4': monumento[23],
+                'n': monumento[24],
+                'e': monumento[25],
+                'z': monumento[26],
+                'codigo_topo': monumento[27]
+            })
+        return render_template(
+            'poligonos.html',
+            monumentos=arreglo_monumentos,
+            nombre_poligono=nombre_poligono,
+            id_monumento=id_monumento or ""
+        )
+    else:
+        print(f"Consultando solo por polígono: {nombre_poligono}")
+        cur.execute("""
+            SELECT id, codigo_poligono, tramo, id_monumento, no_arqueologo FROM registro_excavacion_topografia 
+            WHERE codigo_poligono = %s GROUP BY clave_registro
+        """, (nombre_poligono,))
+
+        poligonos = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        for poligono in poligonos:
+            arreglo_poligonos.append({
+                'id': poligono[0],
+                'codigo_poligono': poligono[1],
+                'tramo': poligono[2],
+                'clave_registro': poligono[3],
+                'no_arqueologo': poligono[4]
+            })
+
+        return render_template(
+            'poligonos.html',
+            poligonos=arreglo_poligonos,
+            nombre_poligono=nombre_poligono,
+            id_monumento=id_monumento or ""
+        )
+@app.route('/descargar_gpkg')
+def descargar_gpkg():
+    nombre_poligono = request.args.get('nombre_poligono')
+    id_monumento = request.args.get('id_monumento')
+    if not nombre_poligono:
+        return "Nombre de polígono no proporcionado", 400
+
+    try:
+        exportador = ExportarGeoPackage(nombre_poligono, id_monumento)
+        exportador.exportar_geopackage()
+        filepath = f"registro_excavacion_topografia_{nombre_poligono}_{id_monumento}.gpkg"
+        return send_file(filepath, as_attachment=True)
+    except Exception as e:
+        return str(e), 500
+@app.route('/importar_bitacora_estatica', methods=['POST'])
+def importar_bitacora_estatica():
+    importar_excel_bitacora()
+    return redirect(url_for('backup'))
+
+def importar_excel_bitacora():
+    """Importa datos desde un archivo Excel ubicado en backup/BITACORA hacia la tabla 'bitacora' en la base de datos."""
+    import pandas as pd
+
+    try:
+        # Cargar el archivo Excel
+        df = pd.read_excel('backup/BITACORA/Bitacora de enlaces.xlsx', engine='openpyxl')
+
+        # Omitir la primera fila (asumiendo que es encabezado o fila no deseada)
+        df = df.iloc[1:]
+
+        # Conectar a la base de datos
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        for index, row in df.iterrows():
+            # Saltar filas donde la primera columna esté vacía
+            if pd.isna(row.iloc[0]) or str(row.iloc[0]).strip() == "":
+                print(f"Fila {index} omitida porque la primera columna está vacía.")
+                continue
+
+            # Validar que haya al menos 41 columnas
+            if len(row) < 41:
+                print(f"Fila {index} tiene menos de 41 columnas, se omite.")
+                continue
+
+            id_monumento = row.iloc[1]  # columna 1 = id_monumento
+            enlace_carpeta = row.iloc[2]  # columna 2 = enlace_carpeta
+
+            valores_base = []
+            for i in range(3, 43):  # Tomar desde la columna 3 hasta la 42 (total 40 columnas)
+                val = row.iloc[i]
+                if pd.isna(val):
+                    valores_base.append("")
+                else:
+                    try:
+                        int_val = int(float(val))
+                        valores_base.append("{:03d}".format(int_val))
+                    except (ValueError, TypeError):
+                        valores_base.append(str(val))
+
+            if len(valores_base) != 40:
+                print(f"Fila {index} con id_monumento {id_monumento} tiene longitud incorrecta.")
+                continue
+
+            # Verificar si ya existe
+            cur.execute("SELECT COUNT(*) FROM bitacora WHERE id_monumento = %s", (id_monumento,))
+            count = cur.fetchone()[0]
+
+            if count > 0:
+                print(f"Registro con id_monumento {id_monumento} ya existe, se actualizará.")
+                valores_update = [id_monumento, enlace_carpeta] + valores_base + [id_monumento]
+                cur.execute("""
+                    UPDATE bitacora
+                    SET id_monumento = %s, enlace_carpeta = %s, id_mon_sup_intervenidos = %s, id_mon_sup_no_intervenidos = %s,
+                        no_intervenidas = %s, total_superiores_intervenidas = %s, poligono = %s, area = %s,
+                        tipo_intervencion = %s, id_arqueologo = %s, nombre_arqueologo = %s, formulario = %s,
+                        tabla_registro = %s, fotos_costado = %s, fotos_perfil_capa = %s, fotos_codigo = %s,
+                        dibujo_planta = %s, dibujo_corte = %s, porcentaje_entregable = %s,
+                        observaciones_arqueologia = %s, id_arquitecto = %s, dxf = %s, pdf = %s, observaciones = %s,
+                        registro_unico = %s, costados_finales = %s, vuelo_inicial = %s, vuelo_intermedio = %s,
+                        vuelo_final = %s, observaciones_fotogrametria = %s, id_enlace = %s, ortofoto_rvt = %s,
+                        ortofoto_cost = %s, ortofoto_orto = %s, dpp = %s, dpl = %s, reti = %s, puntos_topograficos = %s,
+                        join_enlace = %s, porcentaje_avance = %s, carpeta_completa = %s, observaciones_enlace = %s
+                    WHERE id_monumento = %s
+                """, tuple(valores_update))
+            else:
+                try:
+                    valores_insert = [id_monumento, enlace_carpeta] + valores_base
+                    cur.execute("""
+                        INSERT INTO bitacora(
+                            id_monumento, enlace_carpeta,
+                            id_mon_sup_intervenidos, id_mon_sup_no_intervenidos, no_intervenidas,
+                            total_superiores_intervenidas, poligono, area, tipo_intervencion,
+                            id_arqueologo, nombre_arqueologo, formulario, tabla_registro, fotos_costado,
+                            fotos_perfil_capa, fotos_codigo, dibujo_planta, dibujo_corte, porcentaje_entregable,
+                            observaciones_arqueologia, id_arquitecto, dxf, pdf, observaciones,
+                            registro_unico, costados_finales, vuelo_inicial, vuelo_intermedio,
+                            vuelo_final, observaciones_fotogrametria, id_enlace, ortofoto_rvt,
+                            ortofoto_cost, ortofoto_orto, dpp, dpl, reti, puntos_topograficos,
+                            join_enlace, porcentaje_avance, carpeta_completa, observaciones_enlace
+                        )
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                                %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, tuple(valores_insert))
+                except Exception as e:
+                    print(f"Error al insertar los datos: {e}")
+                    continue
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("Datos importados correctamente desde el archivo Excel.")
+        flash("Datos importados correctamente desde el archivo Excel.", "success")
+        return None
+
+    except FileNotFoundError:
+        print("El archivo Excel no se encontró en la ruta especificada.")
+        flash("El archivo Excel no se encontró en la ruta especificada.", "error")
+        return None
+
+    except pd.errors.EmptyDataError:
+        print("El archivo Excel está vacío.")
+        flash("El archivo Excel está vacío.", "error")
+        return None
+
+    except pd.errors.ParserError:
+        print("Error al analizar el archivo Excel. Asegúrate de que esté en un formato válido.")
+        flash("Error al analizar el archivo Excel. Asegúrate de que esté en un formato válido.", "error")
+        return None
+
+    except Exception as e:
+        print(f"Error al importar el archivo Excel: {e}")
+        flash(f"Error al importar el archivo Excel: {e}", "error")
+        return None
+
+
 
 if __name__ == '__main__':
+    # Abre un túnel público en el puerto 5000
+    # public_url = ngrok.connect(5000)
+    # print(f"\n* App pública disponible en: {public_url}\n")
+
+    # # Inicia la app Flask normalmente
+    # app.run(port=5000)
     app.run(debug=True)

@@ -7,84 +7,56 @@
                     <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                     Inicio
                 </a>
+
                 <div class="sb-sidenav-menu-heading">Modulos</div>
-                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts"
-                    aria-expanded="false" aria-controls="collapseLayouts">
-                    <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
+
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#MenuBackups"
+                    aria-expanded="false" aria-controls="MenuBackups">
+                    <div class="sb-nav-link-icon"><i class="fal fa-sync"></i></div>
                     Respaldo de drive
                     <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
-                <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne"
-                    data-bs-parent="#sidenavAccordion">
+
+                <div class="collapse" id="MenuBackups" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav">
-                        <a class="nav-link" href="{{ url_for('config_drive') }}">Configuraciones drive</a>
-                        <a class="nav-link" href="{{ url_for('backup') }}">Backup</a>
-                        <!-- <a class="nav-link" href="layout-sidenav-light.html">Lista de respaldos ZIP</a>  -->
-                        <a class="nav-link" href="{{ url_for('files') }}">Navegador de archivos</a>
+                        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('config_drive') }}">
+                            <i class="fal fa-cogs text-primary"></i>
+                            <span>Configuraciones drive</span>
+                        </a>
+                        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('backup') }}">
+                            <i class="fal fa-sync text-success"></i>
+                            <span>Backup</span>
+                        </a>
+                        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('files') }}">
+                            <i class="fal fa-folder-open text-warning"></i>
+                            <span>Navegador de archivos</span>
+                        </a>
                     </nav>
                 </div>
-                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseLayouts"
-                    aria-expanded="false" aria-controls="collapseLayouts">
-                    <div class="sb-nav-link-icon"><i class="fas fa-columns"></i></div>
+
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#MenuPoligonos"
+                    aria-expanded="false" aria-controls="MenuPoligonos">
+                    <div class="sb-nav-link-icon"><i class="fal fa-draw-polygon"></i></div>
                     Poligonos
                     <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
-                <div class="collapse" id="collapseLayouts" aria-labelledby="headingOne"
+
+                <div class="collapse" id="MenuPoligonos" aria-labelledby="headingOne"
                     data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav">
-                        <a class="nav-link" href="{{ url_for('config_drive') }}">Configuraciones drive</a>
-                        <a class="nav-link" href="{{ url_for('backup') }}">Backup</a>
-                        <!-- <a class="nav-link" href="layout-sidenav-light.html">Lista de respaldos ZIP</a>  -->
-                        <a class="nav-link" href="{{ url_for('files') }}">Navegador de archivos</a>
+                        {% if menu %}
+                        {% for item in menu %}
+                        <a class="nav-link d-flex align-items-center gap-2"
+                            href="{{ url_for('poligonos', nombre_poligono=item.nombre, id_monumento="") }}">
+                            <i class="fal fa-folder-minus text-warning"></i>
+                            <span>{{ item.nombre }}</span>
+                        </a>
+                        {% endfor %}
+                        {% else %}
+                        <p class="text-white px-3">No hay poligonos</p>
+                        {% endif %}
                     </nav>
                 </div>
-                <!-- <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapsePages"
-                    aria-expanded="false" aria-controls="collapsePages">
-                    <div class="sb-nav-link-icon"><i class="fas fa-book-open"></i></div>
-                    Pages
-                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                </a>
-                <div class="collapse" id="collapsePages" aria-labelledby="headingTwo"
-                    data-bs-parent="#sidenavAccordion">
-                    <nav class="sb-sidenav-menu-nested nav accordion" id="sidenavAccordionPages">
-                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
-                            data-bs-target="#pagesCollapseAuth" aria-expanded="false" aria-controls="pagesCollapseAuth">
-                            Authentication
-                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse" id="pagesCollapseAuth" aria-labelledby="headingOne"
-                            data-bs-parent="#sidenavAccordionPages">
-                            <nav class="sb-sidenav-menu-nested nav">
-                                <a class="nav-link" href="login.html">Login</a>
-                                <a class="nav-link" href="register.html">Register</a>
-                                <a class="nav-link" href="password.html">Forgot Password</a>
-                            </nav>
-                        </div>
-                        <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
-                            data-bs-target="#pagesCollapseError" aria-expanded="false"
-                            aria-controls="pagesCollapseError">
-                            Error
-                            <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
-                        </a>
-                        <div class="collapse" id="pagesCollapseError" aria-labelledby="headingOne"
-                            data-bs-parent="#sidenavAccordionPages">
-                            <nav class="sb-sidenav-menu-nested nav">
-                                <a class="nav-link" href="401.html">401 Page</a>
-                                <a class="nav-link" href="404.html">404 Page</a>
-                                <a class="nav-link" href="500.html">500 Page</a>
-                            </nav>
-                        </div>
-                    </nav>
-                </div> -->
-                <!-- <div class="sb-sidenav-menu-heading">Addons</div>
-                <a class="nav-link" href="charts.html">
-                    <div class="sb-nav-link-icon"><i class="fas fa-chart-area"></i></div>
-                    Charts
-                </a>
-                <a class="nav-link" href="tables.html">
-                    <div class="sb-nav-link-icon"><i class="fas fa-table"></i></div>
-                    Tables
-                </a> -->
             </div>
         </div>
     </nav>

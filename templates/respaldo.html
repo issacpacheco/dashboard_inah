@@ -130,6 +130,12 @@
                                                 <tr>
                                                     <td>{{ config_drive.nombre }}</td>
                                                     <td>
+                                                        {% if config_drive.nombre == 'BITACORA' %}
+                                                        <form action="{{ url_for('importar_bitacora_estatica') }}" method="post">
+                                                            <button class="btn btn-primary btn-sm mb-1" type="submit"><i class="fal fa-sync"></i> Importar bitácora
+                                                                fija</button>
+                                                        </form>
+                                                        {% else %}
                                                         <form method="post" action="{{ url_for('backup') }}"
                                                             onsubmit="return confirm('¿Desea actualizar los registros de la excavación {{ config_drive.nombre }}?')">
                                                             <input type="hidden" name="accion"
@@ -140,6 +146,7 @@
                                                                 <i class="fal fa-sync"></i> Actualizar
                                                             </button>
                                                         </form>
+                                                        {% endif %}
                                                     </td>
                                                 </tr>
                                                 {% endfor %}
