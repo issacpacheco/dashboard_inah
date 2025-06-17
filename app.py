@@ -633,53 +633,6 @@ def concentrado_capas():
 @app.route('/mapa')
 def mapa():
     return render_template('mapa.html')
-# @app.route('/api/dpp')
-# def obtener_dpp():
-#     DB_PARAMS = {
-#         'dbname': 'local',
-#         'user': 'postgres',
-#         'password': 'root',
-#         'host': 'localhost',
-#         'port': 5432
-#     }
-
-#     try:
-#         conn = psycopg2.connect(**DB_PARAMS)
-#         cur = conn.cursor()
-
-#         # Consulta optimizada: simplifica y filtra NULLs
-#         cur.execute('''
-#             SELECT "ID Monumento", ST_AsGeoJSON(ST_Simplify(geometry, 0.001), 5)
-#             FROM tren_carga."DPP_poligonos"
-#             WHERE geometry IS NOT NULL
-#             LIMIT 500
-#         ''')
-
-#         features = []
-#         for row in cur.fetchall():
-#             geojson = row[1]
-#             if geojson is None:
-#                 continue  # Protección adicional en Python
-#             features.append({
-#                 "type": "Feature",
-#                 "geometry": json.loads(geojson),
-#                 "properties": {
-#                     "ID Monumento": row[0]
-#                 }
-#             })
-
-#         return jsonify({
-#             "type": "FeatureCollection",
-#             "features": features
-#         })
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-#     finally:
-#         if 'cur' in locals():
-#             cur.close()
-#         if 'conn' in locals():
-#             conn.close()
 
 def obtener_geojson_reproyectado(nombre_capa):
     DB_PARAMS = {
@@ -689,21 +642,23 @@ def obtener_geojson_reproyectado(nombre_capa):
         'host': 'localhost',
         'port': 5432
     }
+
     conn = psycopg2.connect(**DB_PARAMS)
 
-    # Consulta para obtener geometría y ID
-    query = f'SELECT "ID Monumento", geometry FROM tren_carga."{nombre_capa}_poligonos"'
+    query = f'''
+                SELECT "ID Monumento", 
+                    ST_Transform(
+                        ST_SimplifyPreserveTopology(geometry, 5), 
+                    4326) AS geometry
+                FROM tren_carga."{nombre_capa}_poligonos"
+            '''
 
-    # Cargar en GeoDataFrame (geopandas detecta la geometría)
+    # Cargar la geometría reproyectada ya desde SQL
     gdf = gpd.read_postgis(query, conn, geom_col='geometry')
 
-    # Definir CRS actual de tus datos; cambia EPSG:6371 si es otro CRS proyectado
-    gdf = gdf.set_crs(epsg=6371)
+    # Ya está en EPSG:4326 (no reproyectar de nuevo)
+    gdf = gdf.set_crs(epsg=4326)
 
-    # Reproyectar a WGS84 (EPSG:4326)
-    gdf = gdf.to_crs(epsg=4326)
-
-    # Construir GeoJSON en formato dict
     features = []
     for _, row in gdf.iterrows():
         features.append({
@@ -718,6 +673,7 @@ def obtener_geojson_reproyectado(nombre_capa):
         "type": "FeatureCollection",
         "features": features
     }
+
 
 @app.route('/api/<nombre>')
 def api_geojson(nombre):

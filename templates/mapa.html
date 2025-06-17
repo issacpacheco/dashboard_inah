@@ -29,43 +29,65 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
-
     <script>
-        // Crear mapa centrado en Yucatán (ajusta coords y zoom)
         var map = L.map('map').setView([20.7, -88.5], 7);
 
-        // Añadir capa base OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Cargar GeoJSON desde Flask API
-        fetch('/api/RETI')
-            .then(response => response.json())
-            .then(data => {
-                // Añadir GeoJSON al mapa
-                var geojsonLayer = L.geoJSON(data, {
+        async function cargaGeoJSON() {
+            try {
+                const responseRETI = await fetch('/api/RETI');
+                const dataRETI = await responseRETI.json();
+                const layerRETI = L.geoJSON(dataRETI, {
+                    onEachFeature: function (feature, layer) {
+                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
+                    },
                     style: {
                         color: 'blue',
                         weight: 2,
-                        fillOpacity: 0.3
-                    },
-                    onEachFeature: function (feature, layer) {
-                        if (feature.properties && feature.properties["ID Monumento"]) {
-                            layer.bindPopup('ID Monumento: ' + feature.properties["ID Monumento"]);
-                        }
+                        fillOpacity: 0.4
                     }
                 }).addTo(map);
+                map.fitBounds(layerRETI.getBounds());
 
-                // Ajustar vista al bounds de la capa
-                map.fitBounds(geojsonLayer.getBounds());
-            })
-            .catch(error => {
-                console.error('Error al cargar GeoJSON:', error);
-                alert('No se pudo cargar la capa GeoJSON.');
-            });
+                const responseDPL = await fetch('/api/DPL');
+                const dataDPL = await responseDPL.json();
+                const layerDPL = L.geoJSON(dataDPL, {
+                    onEachFeature: function (feature, layer) {
+                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
+                    },
+                    style: {
+                        color: 'pink',
+                        weight: 2,
+                        fillOpacity: 0.4
+                    }
+                }).addTo(map);
+                map.fitBounds(layerDPL.getBounds());
+
+                const responseDPP = await fetch('/api/DPP');
+                const dataDPP = await responseDPP.json();
+                const layerDPP = L.geoJSON(dataDPP, {
+                    onEachFeature: function (feature, layer) {
+                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
+                    },
+                    style: {
+                        color: 'red',
+                        weight: 2,
+                        fillOpacity: 0.4
+                    }
+                }).addTo(map);
+                map.fitBounds(layerDPP.getBounds());
+            } catch (err) {
+                console.error('Error al cargar GeoJSON:', err);
+            }
+        }
+
+        cargaGeoJSON();
     </script>
+
 </body>
 
 </html>
