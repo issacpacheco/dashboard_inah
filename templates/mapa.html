@@ -2,11 +2,11 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mapa DPP - Leaflet + Flask</title>
-
-    <!-- Leaflet CSS -->
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>TREN DE CARGA - Repositorio</title>
+    {% include 'head.html' %}
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" crossorigin="" />
 
     <style>
@@ -24,70 +24,119 @@
     </style>
 </head>
 
-<body>
-    <div id="map"></div>
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}"><i class="fal fa-home"></i></a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a
+                                                href="{{ url_for('poligonos', nombre_poligono=nombre_poligono, id_monumento=id_monumento) }}">Poligono:
+                                                {{ nombre_poligono }} - Monumento: {{ id_monumento }}</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
-    <script>
-        var map = L.map('map').setView([20.7, -88.5], 7);
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <i class="fas fa-table mr-1"></i>
+                            Mapa
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-8">
+                                    <div id="map"></div>
+                                </div>
+                                <div class="col-sm-4">
+                                    <!-- Mostraremos un cuadro donde estara la informacion del monumento al que se le haya dado clic  en el mapa -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            Información del Monumento
+                                        </div>
+                                        <div class="card-body">
+                                            <p id="info-monumento">Haz clic en un monumento para ver su información.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
 
-        async function cargaGeoJSON() {
-            try {
-                const responseRETI = await fetch('/api/RETI');
-                const dataRETI = await responseRETI.json();
-                const layerRETI = L.geoJSON(dataRETI, {
-                    onEachFeature: function (feature, layer) {
-                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
-                    },
-                    style: {
-                        color: 'blue',
-                        weight: 2,
-                        fillOpacity: 0.4
-                    }
-                }).addTo(map);
-                map.fitBounds(layerRETI.getBounds());
-
-                const responseDPL = await fetch('/api/DPL');
-                const dataDPL = await responseDPL.json();
-                const layerDPL = L.geoJSON(dataDPL, {
-                    onEachFeature: function (feature, layer) {
-                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
-                    },
-                    style: {
-                        color: 'pink',
-                        weight: 2,
-                        fillOpacity: 0.4
-                    }
-                }).addTo(map);
-                map.fitBounds(layerDPL.getBounds());
-
-                const responseDPP = await fetch('/api/DPP');
-                const dataDPP = await responseDPP.json();
-                const layerDPP = L.geoJSON(dataDPP, {
-                    onEachFeature: function (feature, layer) {
-                        layer.bindPopup("ID Monumento: " + feature.properties["ID Monumento"]);
-                    },
-                    style: {
-                        color: 'red',
-                        weight: 2,
-                        fillOpacity: 0.4
-                    }
-                }).addTo(map);
-                map.fitBounds(layerDPP.getBounds());
-            } catch (err) {
-                console.error('Error al cargar GeoJSON:', err);
-            }
-        }
-
-        cargaGeoJSON();
-    </script>
-
+    {% include 'scripts.html' %}
 </body>
+<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
+<script>
+    var map = L.map('map').setView([20.7, -88.5], 7);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 50,
+        attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    //Mostramos en el div la informacion del monumento al que se le haya dado clic
+    function mostrarInformacionMonumento(monumento) {
+        document.getElementById('info-monumento').textContent = monumento;
+    }
+
+    map.on('click', function (e) {
+        var latlng = e.latlng;
+        var monumento = latlng.toString();
+        mostrarInformacionMonumento(monumento);
+    });
+
+    async function cargaGeoJSON() {
+        const capas = [
+            { nombre: 'RETI', url: '/api/RETI', color: 'blue', weight: 2 },
+            { nombre: 'DPP', url: '/api/DPP', color: 'red', weight: 2},
+            { nombre: 'DPL', url: '/api/DPL', color: 'gray', weight: 5 }
+        ];
+
+        capas.forEach(async (capa) => {
+            try {
+                const response = await fetch(capa.url);
+                const data = await response.json();
+                const layer = L.geoJSON(data, {
+                    onEachFeature: (feature, layer) => {
+                        const popup = crearPopup(feature.properties['ID Monumento']);
+                        layer.bindPopup(popup);
+                    },
+                    style: {
+                        color: capa.color,
+                        weight: capa.weight,
+                        fillOpacity: 0.4
+                    }
+                }).addTo(map);
+                map.fitBounds(layer.getBounds());
+            } catch (err) {
+                console.error(`Error al cargar ${capa.nombre}:`, err);
+            }
+        });
+    }
+
+    function crearPopup(idMonumento) {
+        return `<a>ID del monumento: ${idMonumento}</a>`;
+    }
+
+    cargaGeoJSON();
+</script>
 
 </html>
