@@ -7,6 +7,10 @@ from script.registros_excavaciones import ExportExcel
 from script.exportar_geopackage import ExportarGeoPackage
 from flask_bcrypt import Bcrypt
 import MySQLdb
+import psycopg2
+import json
+import geopandas as gpd
+from psycopg2.extras import DictCursor
 import os
 
 app = Flask(__name__)
@@ -580,7 +584,163 @@ def importar_excel_bitacora():
         flash(f"Error al importar el archivo Excel: {e}", "error")
         return None
 
+@app.route('/bitacora', methods=['GET'])
+def bitacora():
+    #consulta los datos de la tabla bitacora
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM bitacora")
+        bitacora = cur.fetchall()
+        cur.close()
+        conn.close()
+        return render_template('bitacora.html', bitacoras=bitacora)
+    except Exception as e:
+        print(f"Error al obtener los datos de bitacora: {e}")
+        flash("Error al obtener los datos de bitacora.", "error")
+        return render_template('bitacora.html', bitacoras=[])
 
+@app.route('/concentrado_capas', methods=['GET'])
+def concentrado_capas():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM concentrado_capas")
+        concentrado = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        if not concentrado:
+            flash("No hay datos en la tabla concentrado_capas.", "info")
+            return render_template('concentrado_capas.html', concentrado=[])
+
+        arreglo_concentrado = []
+        for fila in concentrado:
+            arreglo_concentrado.append({
+                'id': fila[0],
+                'nombre': fila[1],
+                'descripcion': fila[2],
+                'fecha_creacion': fila[3]
+            })
+
+        return render_template('concentrado_capas.html', concentrado=arreglo_concentrado)
+
+    except Exception as e:
+        print(f"Error al obtener los datos de concentrado_capas: {e}")
+        flash("Error al obtener los datos de concentrado_capas.", "error")
+        return render_template('concentrado_capas.html', concentrado=[])
+    
+@app.route('/mapa')
+def mapa():
+    return render_template('mapa.html')
+# @app.route('/api/dpp')
+# def obtener_dpp():
+#     DB_PARAMS = {
+#         'dbname': 'local',
+#         'user': 'postgres',
+#         'password': 'root',
+#         'host': 'localhost',
+#         'port': 5432
+#     }
+
+#     try:
+#         conn = psycopg2.connect(**DB_PARAMS)
+#         cur = conn.cursor()
+
+#         # Consulta optimizada: simplifica y filtra NULLs
+#         cur.execute('''
+#             SELECT "ID Monumento", ST_AsGeoJSON(ST_Simplify(geometry, 0.001), 5)
+#             FROM tren_carga."DPP_poligonos"
+#             WHERE geometry IS NOT NULL
+#             LIMIT 500
+#         ''')
+
+#         features = []
+#         for row in cur.fetchall():
+#             geojson = row[1]
+#             if geojson is None:
+#                 continue  # Protección adicional en Python
+#             features.append({
+#                 "type": "Feature",
+#                 "geometry": json.loads(geojson),
+#                 "properties": {
+#                     "ID Monumento": row[0]
+#                 }
+#             })
+
+#         return jsonify({
+#             "type": "FeatureCollection",
+#             "features": features
+#         })
+
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+#     finally:
+#         if 'cur' in locals():
+#             cur.close()
+#         if 'conn' in locals():
+#             conn.close()
+
+def obtener_geojson_reproyectado(nombre_capa):
+    DB_PARAMS = {
+        'dbname': 'local',
+        'user': 'postgres',
+        'password': 'root',
+        'host': 'localhost',
+        'port': 5432
+    }
+    conn = psycopg2.connect(**DB_PARAMS)
+
+    # Consulta para obtener geometría y ID
+    query = f'SELECT "ID Monumento", geometry FROM tren_carga."{nombre_capa}_poligonos"'
+
+    # Cargar en GeoDataFrame (geopandas detecta la geometría)
+    gdf = gpd.read_postgis(query, conn, geom_col='geometry')
+
+    # Definir CRS actual de tus datos; cambia EPSG:6371 si es otro CRS proyectado
+    gdf = gdf.set_crs(epsg=6371)
+
+    # Reproyectar a WGS84 (EPSG:4326)
+    gdf = gdf.to_crs(epsg=4326)
+
+    # Construir GeoJSON en formato dict
+    features = []
+    for _, row in gdf.iterrows():
+        features.append({
+            "type": "Feature",
+            "geometry": row['geometry'].__geo_interface__,
+            "properties": {"ID Monumento": row["ID Monumento"]}
+        })
+
+    conn.close()
+
+    return {
+        "type": "FeatureCollection",
+        "features": features
+    }
+
+@app.route('/api/<nombre>')
+def api_geojson(nombre):
+    capas_validas = ['DPP', 'DPL', 'RETI']
+    if nombre.upper() not in capas_validas:
+        return jsonify({"error": "Capa no válida"}), 404
+
+    try:
+        data = obtener_geojson_reproyectado(nombre.upper())
+    except Exception as e:
+        return jsonify({"error": f"Error al obtener datos: {str(e)}"}), 500
+
+    return jsonify(data)
+
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+@app.after_request
+def after_request(response):
+    return add_no_cache_headers(response)
 
 if __name__ == '__main__':
     # Abre un túnel público en el puerto 5000

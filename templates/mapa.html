@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mapa DPP - Leaflet + Flask</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" crossorigin="" />
+
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #map {
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
+
+    <script>
+        // Crear mapa centrado en Yucatán (ajusta coords y zoom)
+        var map = L.map('map').setView([20.7, -88.5], 7);
+
+        // Añadir capa base OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        // Cargar GeoJSON desde Flask API
+        fetch('/api/RETI')
+            .then(response => response.json())
+            .then(data => {
+                // Añadir GeoJSON al mapa
+                var geojsonLayer = L.geoJSON(data, {
+                    style: {
+                        color: 'blue',
+                        weight: 2,
+                        fillOpacity: 0.3
+                    },
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties["ID Monumento"]) {
+                            layer.bindPopup('ID Monumento: ' + feature.properties["ID Monumento"]);
+                        }
+                    }
+                }).addTo(map);
+
+                // Ajustar vista al bounds de la capa
+                map.fitBounds(geojsonLayer.getBounds());
+            })
+            .catch(error => {
+                console.error('Error al cargar GeoJSON:', error);
+                alert('No se pudo cargar la capa GeoJSON.');
+            });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>TREN DE CARGA - Repositorio</title>
+    {% include 'head.html' %}
+    <style>
+        .file-icon {
+            margin-right: 10px;
+        }
+
+        iframe {
+            border: none;
+        }
+    </style>
+</head>
+
+<body class="sb-nav-fixed">
+    {% include 'nav.html' %}
+    <div id="layoutSidenav">
+        {% include 'menu.html' %}
+        <div id="layoutSidenav_content">
+            <main>
+                <div class="container-fluid" id="contenedor">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <nav aria-label="breadcrumb">
+                                    <ol class="breadcrumb mb-0">
+                                        <li class="breadcrumb-item">
+                                            <a href="{{ url_for('panel') }}"><i class="fal fa-home"></i></a>
+                                        </li>
+                                        <li class="breadcrumb-item active" aria-current="page">
+                                            <a
+                                                href="{{ url_for('poligonos', nombre_poligono=nombre_poligono, id_monumento=id_monumento) }}">Poligono:
+                                                {{ nombre_poligono }} - Monumento: {{ id_monumento }}</a>
+                                        </li>
+                                    </ol>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3>Lista de monumentos</h3>
+
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <div class="card mb-4">
+                                <div class="card-body">
+                                    <table class="table table-striped table-hover table-bordered table-sm" id="dataTable">
+                                        <thead>
+                                            <tr>
+                                                <th>ID Monumento</th>
+                                                <th>ID Monumento superior intervenido</th>
+                                                <th>ID Monumento NO intervenido</th>
+                                                <th>No intervenidas</th>
+                                                <th>Total superiores intervenidas</th>
+                                                <th>Poligono</th>
+                                                <th>Área</th>
+                                                <th>Tipo de intervención</th>
+                                                <th>ID Arqueologo</th>
+                                                <th>Nombre del arqueologo</th>
+                                                <th>Formulario</th>
+                                                <th>Tabla de registro</th>
+                                                <th>Fotos costado</th>
+                                                <th>Fotos perfil capa</th>
+                                                <th>Fotos codigo</th>
+                                                <th>Dibujo planta</th>
+                                                <th>Dibujo corte</th>
+                                                <th>Porcentaje entregable</th>
+                                                <th>Observaciones del arqueologo</th>
+                                                <th>ID arquitecto</th>
+                                                <th>DFX</th>
+                                                <th>PDF</th>
+                                                <th>Observaciones</th>
+                                                <th>Registro unico</th>
+                                                <th>Costados finales</th>
+                                                <th>Vuelo inicial</th>
+                                                <th>Vuelo intermedio</th>
+                                                <th>Vuelo final</th>
+                                                <th>Observaciones fotogrametria</th>
+                                                <th>ID Enlace</th>
+                                                <th>ORTOFOTO RVT</th>
+                                                <th>ORTOFOTO COST</th>
+                                                <th>ORTOFOTO Orto</th>
+                                                <th>DPP</th>
+                                                <th>DPL</th>
+                                                <th>RETI</th>
+                                                <th>Puntos topograficos</th>
+                                                <th>JOIN Enlace</th>
+                                                <th>Porcentaje de avance</th>
+                                                <th>Carpeta completo</th>
+                                                <th>Observaciones del enlace</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for bitacora in bitacoras %}
+                                            <tr>
+                                                <td>{{ bitacora[1] }}</td>
+                                                <td>{{ bitacora[3] }}</td>
+                                                <td>{{ bitacora[4] }}</td>
+                                                <td>{{ bitacora[5] }}</td>
+                                                <td>{{ bitacora[6] }}</td>
+                                                <td>{{ bitacora[7] }}</td>
+                                                <td>{{ bitacora[8] }}</td>
+                                                <td>{{ bitacora[9] }}</td>
+                                                <td>{{ bitacora[10] }}</td>
+                                                <td>{{ bitacora[11] }}</td>
+                                                <td>{{ bitacora[12] }}</td>
+                                                <td>{{ bitacora[13] }}</td>
+                                                <td>{{ bitacora[14] }}</td>
+                                                <td>{{ bitacora[15] }}</td>
+                                                <td>{{ bitacora[16] }}</td>
+                                                <td>{{ bitacora[17] }}</td>
+                                                <td>{{ bitacora[18] }}</td>
+                                                <td>{{ bitacora[19] }}</td>
+                                                <td>{{ bitacora[20] }}</td>
+                                                <td>{{ bitacora[21] }}</td>
+                                                <td>{{ bitacora[22] }}</td>
+                                                <td>{{ bitacora[23] }}</td>
+                                                <td>{{ bitacora[24] }}</td>
+                                                <td>{{ bitacora[25] }}</td>
+                                                <td>{{ bitacora[26] }}</td>
+                                                <td>{{ bitacora[27] }}</td>
+                                                <td>{{ bitacora[28] }}</td>
+                                                <td>{{ bitacora[29] }}</td>
+                                                <td>{{ bitacora[30] }}</td>
+                                                <td>{{ bitacora[31] }}</td>
+                                                <td>{{ bitacora[32] }}</td>
+                                                <td>{{ bitacora[33] }}</td>
+                                                <td>{{ bitacora[34] }}</td>
+                                                <td>{{ bitacora[35] }}</td>
+                                                <td>{{ bitacora[36] }}</td>
+                                                <td>{{ bitacora[37] }}</td>
+                                                <td>{{ bitacora[38] }}</td>
+                                                <td>{{ bitacora[39] }}</td>
+                                                <td>{{ bitacora[40] }}</td>
+                                                <td>{{ bitacora[41] }}</td>
+                                                <td>{{ bitacora[42] }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            {% include 'footer.html' %}
+        </div>
+    </div>
+
+    {% include 'scripts.html' %}
+</body>
+<script>
+    $(document).ready(function () {
+        var table = $('#dataTable').DataTable({
+            language: {
+                url: "//cdn.datatables.net/plug-ins/1.10.19/i18n/Spanish.json"
+            },
+            orderCellsTop: true,
+            fixedHeader: true,
+            ordering: true,
+            paging: true,
+            searching: true,
+            info: true,
+            autoFill: false,
+            colReorder: false,
+            fixedColumns: false,
+            responsive: true,
+            dom: 'Bfrtip',
+            pageLength: 10,
+            order: [
+                [0, "asc"]
+            ]
+        });
+
+        //Creamos una fila en el head de la tabla y lo clonamos para cada columna
+        $('#dataTable thead tr').clone(true).appendTo('#dataTable thead');
+
+        $('#dataTable thead tr:eq(1) th').each(function (i) {
+            var title = $(this).text(); //es el nombre de la columna
+            $(this).html('<input type="text" placeholder="Buscar por ' + title + '" />');
+
+            $('input', this).on('keyup change', function () {
+                if (table.column(i).search() !== this.value) {
+                    table
+                        .column(i)
+                        .search(this.value)
+                        .draw();
+                }
+            });
+        });
+    });
+
+    
+</script>
+
+</html>

@@ -44,17 +44,42 @@
                 <div class="collapse" id="MenuPoligonos" aria-labelledby="headingOne"
                     data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav">
+                        <a class="nav-link d-flex align-items-center gap-2"
+                            href="{{ url_for('bitacora') }}">
+                            <i class="fal fa-book-reader text-info"></i>
+                            <span>BITACORA</span>
+                        </a>
                         {% if menu %}
                         {% for item in menu %}
+                        {% if item.nombre != "BITACORA" %}
                         <a class="nav-link d-flex align-items-center gap-2"
                             href="{{ url_for('poligonos', nombre_poligono=item.nombre, id_monumento="") }}">
                             <i class="fal fa-folder-minus text-warning"></i>
                             <span>{{ item.nombre }}</span>
                         </a>
+                        {% endif %}
                         {% endfor %}
                         {% else %}
                         <p class="text-white px-3">No hay poligonos</p>
                         {% endif %}
+                    </nav>
+                </div>
+
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#MenuArquitectura"
+                    aria-expanded="false" aria-controls="MenuArquitectura">
+                    <div class="sb-nav-link-icon"><i class="fal fa-draw-polygon"></i></div>
+                    Arquitectura
+                    <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+                </a>
+
+                <div class="collapse" id="MenuArquitectura" aria-labelledby="headingOne"
+                    data-bs-parent="#sidenavAccordion">
+                    <nav class="sb-sidenav-menu-nested nav">
+
+                        <a class="nav-link d-flex align-items-center gap-2" href="{{ url_for('mapa') }}">
+                            <i class="fal fa-hexagon text-warning"></i>
+                            <span>Concentrado de capas</span>
+                        </a>
                     </nav>
                 </div>
             </div>
